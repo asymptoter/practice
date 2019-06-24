@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	authStore "github.com/asymptoter/practice/app/server/store/auth"
 	"github.com/asymptoter/practice/base/ctx"
+	authStore "github.com/asymptoter/practice/store/auth"
 	"github.com/gin-gonic/gin"
 )
 

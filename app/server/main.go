@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/asymptoter/practice/app/server/apis/auth"
+	"github.com/asymptoter/practice/apis/auth"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
