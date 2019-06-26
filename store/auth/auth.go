@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/asymptoter/practice/app/base/ctx"
+	"github.com/asymptoter/practice/base/ctx"
 )
 
 type SignupInfo struct {
@@ -16,6 +16,6 @@ type LoginInfo struct {
 }
 
 type Service interface {
-	Signup(ctx ctx.CTX, signupInfo *SignupInfo) error
-	Login(ctx ctx.CTX, loginInfo *LoginInfo) (string, error)
+	Signup(context ctx.CTX, signupInfo *SignupInfo) error
+	Login(context ctx.CTX, loginInfo *LoginInfo) (string, error)
 }

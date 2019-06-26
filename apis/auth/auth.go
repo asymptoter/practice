@@ -10,7 +10,7 @@ import (
 )
 
 type handler struct {
-	authService *authStore.Service
+	authService authStore.Service
 }
 
 type signupInfo struct {
@@ -18,9 +18,9 @@ type signupInfo struct {
 	password string
 }
 
-func SetHttpHandler(r *gin.Engine, authService *authStore.Service) {
-	h := &authHandler{
-		auth: authService,
+func SetHttpHandler(r *gin.Engine, authService authStore.Service) {
+	h := &handler{
+		authService: authService,
 	}
 
 	r.POST("/signup", h.signup)
@@ -28,20 +28,23 @@ func SetHttpHandler(r *gin.Engine, authService *authStore.Service) {
 }
 
 func (h *handler) signup(c *gin.Context) {
-	info := &signupInfo{}
+	info := &authStore.SignupInfo{}
 	context := ctx.NewContext(c)
 	if err := c.ShouldBind(info); err != nil {
 		log.Println("c.ShouldBind failed ", err)
-		c.JSON(http.StatusBadRequest)
+		c.Status(http.StatusBadRequest)
 		return
 
 	}
 
 	if err := h.authService.Signup(context, info); err != nil {
-		c.JSON()
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK)
+	c.Status(http.StatusOK)
 	return
+}
+
+func (h *handler) login(c *gin.Context) {
 }

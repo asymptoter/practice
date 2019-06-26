@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -15,54 +14,13 @@ import (
 	"time"
 
 	"github.com/asymptoter/practice/apis/auth"
+	authStore "github.com/asymptoter/practice/store/auth"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	yaml "gopkg.in/yaml.v2"
 )
-
-type User struct {
-	Name     string `form:"name"`
-	Password string `form:"password"`
-}
-
-func signup(c *gin.Context) {
-	var user User
-	if c.ShouldBind(&user) == nil {
-		log.Println(user.Name)
-		log.Println(user.Password)
-
-		// Connect to mysql
-		db, err := sql.Open("mysql", "asymptoter:password@localhost:3306")
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		log.Println("sql.Open OK1")
-
-		if _, err = db.Exec("INSERT INTO users (name, password) VALUES (?, ?)", user.Name, user.Password); err != nil {
-			log.Println(err)
-			return
-		}
-
-		log.Println("db.Exec OK")
-
-		t, err := template.ParseFiles("./home.html")
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		if err := t.Execute(c.Writer, nil); err != nil {
-			log.Println(err)
-		}
-	}
-}
-
-func login(c *gin.Context) {
-}
 
 func home(c *gin.Context) {
 	t, err := template.ParseFiles("./index.html")
@@ -118,10 +76,10 @@ func getConfigYaml(env string) *configuration {
 
 func newHttpServer(cfg serverConfiguration, db *gorm.DB) *http.Server {
 	r := gin.New()
-	auth.SetHttpHandler(r)
+
+	authService := authStore.NewService(db)
+	auth.SetHttpHandler(r, authService)
 	r.GET("/home", home)
-	r.POST("/signup", signup)
-	r.POST("/login", login)
 
 	return &http.Server{
 		Addr:    cfg.Address,
@@ -160,6 +118,7 @@ func main() {
 		}
 	}()
 
+	fmt.Println("XD")
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGTERM)
 	<-stopChan

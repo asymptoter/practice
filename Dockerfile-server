@@ -1,0 +1,22 @@
+FROM golang:latest AS builder
+ENV GO111MODULE on
+#RUN go get github.com/pilu/fresh
+WORKDIR /src/github.com/asymptoter/practice
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+COPY . .
+
+WORKDIR ./app/server
+#RUN go get github.com/pilu/fresh
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o main .
+#CMD ls /go/bin
+#CMD fresh -c fresh.conf main.go
+#EXPOSE 8080
+
+FROM scratch
+COPY --from=builder /src/github.com/asymptoter/practice/app/server/main .
+COPY ./config ./config
+CMD ["/main"]
+
+#CMD fresh -c fresh.conf

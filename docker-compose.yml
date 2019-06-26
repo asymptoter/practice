@@ -2,7 +2,8 @@ version: '3'
 services:
     server:
         build: 
-            context: ./app/server
+            context: .
+            dockerfile: Dockerfile-server
         depends_on:
             - "mysql"
             - "redis"
