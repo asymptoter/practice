@@ -28,6 +28,5 @@ func (s *impl) Signup(context ctx.CTX, signupInfo *SignupInfo) error {
 }
 
 func (s *impl) Login(context ctx.CTX, loginInfo *LoginInfo) (string, error) {
-
 	return "", nil
 }
