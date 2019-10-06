@@ -1,0 +1,20 @@
+//這邊使用 proto3 的格式 也就是 protobuf 第三版的意思，要注意，第二版跟第三版有一些語法上的差異喔
+syntax = "proto3";
+
+package auth;
+
+//定義了一個 Service
+service Auth {
+    rpc Signup (SignupRequest) returns(SignupReply){}
+}
+
+//定義了 Auth Service SignupRequest
+message SignupRequest {
+    string email = 1;
+    string token = 2;
+    string nickName = 3;
+}
+
+//定義了 SignupResponse
+message SignupReply {
+}

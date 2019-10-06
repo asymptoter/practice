@@ -1,21 +1,15 @@
 package auth
 
 import (
-	"github.com/asymptoter/practice/base/ctx"
+	"context"
+	"log"
+
+	api "github.com/asymptoter/geochellange/apis/auth"
 )
 
-type SignupInfo struct {
-	Email    string `json:"email" gorm:"email"`
-	Password string `json:"password" gorm:"password"`
-	NickName string `json:"nickName" gorm:"nick_name"`
-}
+type AuthHandler struct{}
 
-type LoginInfo struct {
-	Email    string `json:"email" gorm:"email"`
-	Password string `json:"password" gorm:"password"`
-}
-
-type Service interface {
-	Signup(context ctx.CTX, signupInfo *SignupInfo) error
-	Login(context ctx.CTX, loginInfo *LoginInfo) (string, error)
+func (h *AuthHandler) Signup(ctx context.Context, req *api.SignupRequest) (resp *api.SignupReply, err error) {
+	log.Printf("receive client request, client send:%s\n", req)
+	return &api.SignupReply{}, nil
 }

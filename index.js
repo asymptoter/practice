@@ -323,7 +323,6 @@ function answer(ans) {
     // Generate quiz
     let quizCountry = randomCountry();
     document.getElementById("quiz").innerHTML = quizCountry[1];
-    // document.getElementById(quizCountry).style.display = "";
     document.getElementById("flag").src = "./png1000px/" + quizCountry[0] + ".png";
     lastCountry = quizCountry;
 

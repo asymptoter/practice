@@ -13,8 +13,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/asymptoter/practice/apis/auth"
-	authStore "github.com/asymptoter/practice/store/auth"
+	"github.com/asymptoter/geochallenge/apis/auth"
+	authStore "github.com/asymptoter/geochallenge/store/auth"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -115,6 +115,15 @@ func main() {
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {
 			log.Println("ListenAndServe failed ", err)
+		}
+	}()
+
+	as := &auth.Server{}
+	grpc := grpc.NewServer()
+	pb.RegisterEchoServer(grpc, as)
+	go func() {
+		if err := grpc.Serve(apiListener); err != nil {
+			log.Fatal(" grpc.Serve Error: ", err)
 		}
 	}()
 
