@@ -1,17 +1,15 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"text/template"
-	"time"
 
 	"github.com/asymptoter/geochallenge/apis/auth"
 	authStore "github.com/asymptoter/geochallenge/store/auth"
@@ -19,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	"google.golang.org/grpc"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -58,7 +57,7 @@ type configurations map[string]configuration
 
 func getConfigYaml(env string) *configuration {
 	c := configurations{}
-	file, err := ioutil.ReadFile("./config/config.yml")
+	file, err := ioutil.ReadFile("../../config/config.yml")
 	if err != nil {
 		log.Println("ioutil.ReadFile failed ", err)
 		return nil
@@ -72,19 +71,6 @@ func getConfigYaml(env string) *configuration {
 	res := c[env]
 
 	return &res
-}
-
-func newHttpServer(cfg serverConfiguration, db *gorm.DB) *http.Server {
-	r := gin.New()
-
-	authService := authStore.NewService(db)
-	auth.SetHttpHandler(r, authService)
-	r.GET("/home", home)
-
-	return &http.Server{
-		Addr:    cfg.Address,
-		Handler: r,
-	}
 }
 
 func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
@@ -109,20 +95,17 @@ func main() {
 		return
 	}
 
-	httpServer := newHttpServer(cfg.Server, db)
+	apiListener, err := net.Listen("tcp", ":9999")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
-	// Start http server
+	as := &authStore.AuthHandler{DB: db}
+	grpcServer := grpc.NewServer()
+	auth.RegisterAuthServer(grpcServer, as)
 	go func() {
-		if err := httpServer.ListenAndServe(); err != nil {
-			log.Println("ListenAndServe failed ", err)
-		}
-	}()
-
-	as := &auth.Server{}
-	grpc := grpc.NewServer()
-	pb.RegisterEchoServer(grpc, as)
-	go func() {
-		if err := grpc.Serve(apiListener); err != nil {
+		if err := grpcServer.Serve(apiListener); err != nil {
 			log.Fatal(" grpc.Serve Error: ", err)
 		}
 	}()
@@ -132,11 +115,6 @@ func main() {
 	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGTERM)
 	<-stopChan
 	log.Println("main: shutting down server...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if err := httpServer.Shutdown(ctx); err != nil {
-		log.Println("main: http server shutdown error: %v", err)
-	}
+	grpcServer.GracefulStop()
 	log.Println("main: gracefully stopped")
 }

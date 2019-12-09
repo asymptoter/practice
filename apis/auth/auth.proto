@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package auth;
 
-//定義了一個 Service
+//定義了一個 Auth Service
 service Auth {
     rpc Signup (SignupRequest) returns(SignupReply){}
 }
@@ -17,4 +17,5 @@ message SignupRequest {
 
 //定義了 SignupResponse
 message SignupReply {
+    string msg = 1;
 }

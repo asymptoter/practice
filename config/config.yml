@@ -1,6 +1,6 @@
 local:
     server:
-        address: ":8080"
+        address: ":9999"
     mysql:
         address: "docker.for.mac.localhost:3306"
         databaseName: "practice"
