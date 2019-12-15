@@ -11,8 +11,7 @@ import (
 	"syscall"
 	"text/template"
 
-	"github.com/asymptoter/geochallenge/apis/auth"
-	authStore "github.com/asymptoter/geochallenge/store/auth"
+	"github.com/asymptoter/geochallenge-backend/apis/auth"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -85,6 +84,18 @@ func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
 	return db, nil
 }
 
+func newHttpServer(cfg serverConfiguration, db *gorm.DB) *http.Server {
+	r := gin.New()
+
+	auth.SetHttpHandler(r, db)
+	r.GET("/home", home)
+
+	return &http.Server{
+		Addr:    cfg.Address,
+		Handler: r,
+	}
+}
+
 func main() {
 	flag.Parse()
 	cfg := getConfigYaml("local")
@@ -95,18 +106,12 @@ func main() {
 		return
 	}
 
-	apiListener, err := net.Listen("tcp", ":9999")
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	httpServer := newHttpServer(cfg.Server, db)
 
-	as := &authStore.AuthHandler{DB: db}
-	grpcServer := grpc.NewServer()
-	auth.RegisterAuthServer(grpcServer, as)
+	// Start http server
 	go func() {
-		if err := grpcServer.Serve(apiListener); err != nil {
-			log.Fatal(" grpc.Serve Error: ", err)
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Println("ListenAndServe failed ", err)
 		}
 	}()
 

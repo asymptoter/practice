@@ -1,14 +1,15 @@
-module github.com/asymptoter/geochallenge
+module github.com/asymptoter/geochallenge-backend
 
-go 1.12
+go 1.13
 
 require (
-	github.com/asymptoter/practice v0.0.0-20190626062637-291287ec62b9
-	github.com/gin-gonic/gin v1.4.0
+	github.com/gin-gonic/gin v1.5.0
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/golang/protobuf v1.3.1
-	github.com/jinzhu/gorm v1.9.9
+	github.com/google/uuid v1.1.1
+	github.com/jinzhu/gorm v1.9.11
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/sirupsen/logrus v1.2.0
-	google.golang.org/grpc v1.19.0
-	gopkg.in/yaml.v2 v2.2.2
+	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
+	google.golang.org/grpc v1.25.1
+	gopkg.in/yaml.v2 v2.2.7
 )
