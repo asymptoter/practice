@@ -3,27 +3,32 @@ package ctx
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
 
 type CTX struct {
 	context.Context
-	Fields logrus.Fields
+	logrus.FieldLogger
 }
 
-func NewContext(c *gin.Context) CTX {
-	return c.Request.Context().(CTX)
+func Background() CTX {
+	return CTX{
+		Context:     context.Background(),
+		FieldLogger: logrus.StandardLogger(),
+	}
 }
 
-func (c *CTX) WithValue(key string, val interface{}) {
-	c.Fields[key] = val
+func WithValue(parent CTX, key string, val interface{}) CTX {
+	return CTX{
+		Context:     context.WithValue(parent, key, val),
+		FieldLogger: parent.FieldLogger.WithField(key, val),
+	}
 }
 
-func (c *CTX) WithField(key string, val interface{}) *logrus.Entry {
-	return logrus.WithFields(c.Fields).WithField(key, val)
-}
-
-func (c *CTX) WithFields(f logrus.Fields) *logrus.Entry {
-	return logrus.WithFields(c.Fields).WithFields(f)
+func WithValues(parent CTX, m map[string]interface{}) CTX {
+	c := parent
+	for k, v := range m {
+		c = WithValue(c, k, v)
+	}
+	return c
 }

@@ -4,26 +4,43 @@ services:
         image: "server:latest"
         build: 
             context: .
-            dockerfile: Dockerfile-server
+            dockerfile: "Dockerfile-server"
         depends_on:
             - "mysql"
             - "redis"
         ports:
             - "8080:8080"
+        links:
+            - mysql:mysql
         volumes:
-            - "./app/server:/go/src/github.com/asymptoter/practice/app/server"
+            - "./app/server:/go/src/github.com/asymptoter/geochallenge-backend/app/server"
+        container_name: "server"
+        networks:
+            - "network1"
+        restart: always
     redis:
         image: "redis:alpine"
         ports:
             - "6379:6379"
+        networks:
+            - "network1"
+        container_name: "redis"
     mysql:
         image: "mysql:8.0"
+        command: --default-authentication-plugin=mysql_native_password
         environment:
             MYSQL_DATABASE: "practice"
-            MYSQL_ROOT_PASSWORD: "practice-mysql-password"
+            MYSQL_ROOT_PASSWORD: "password"
             MYSQL_USER: "asymptoter"
             MYSQL_PASSWORD: "password"
         ports:
             - "3306:3306"
         volumes:
-            - "./databases/mysql:/var/lib/mysql"
+            - "./databases/mysql/data:/var/lib/mysql"
+            - "./databases/mysql/init/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+        networks:
+            - "network1"
+        container_name: "mysql"
+networks:
+    network1:
+        driver: "bridge"

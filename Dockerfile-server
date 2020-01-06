@@ -8,8 +8,8 @@ COPY . .
 WORKDIR ./app/server
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o main .
 
-#FROM scratch
-#COPY --from=builder /src/github.com/asymptoter/geochallenge-backend/app/server/main .
+FROM scratch
+COPY --from=builder /src/github.com/asymptoter/geochallenge-backend/app/server/main .
 COPY ./config ./config
 CMD ["./main"]
-EXPOSE 9999
+EXPOSE 8080

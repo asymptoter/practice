@@ -1,10 +1,11 @@
 local:
     server:
-        address: ":9999"
+        address: ":8080"
     mysql:
         address: "docker.for.mac.localhost:3306"
         databaseName: "practice"
         username: "asymptoter"
         password: "password"
+        connectionRetry: 5
     redis:
         address: "127.0.0.1:6379"

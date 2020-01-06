@@ -13,27 +13,28 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SetHttpHandler(r *gin.Engine, db *gorm.DB) {
-	h := &AuthHandler{DB: db}
-	r.POST("/auth/signup", h.signup)
-}
-
-type AuthHandler struct {
+type Handler struct {
 	DB *gorm.DB
 }
 
+func SetHttpHandler(r *gin.Engine, db *gorm.DB) {
+	h := Handler{DB: db}
+	r.Handle("POST", "/auth/signup", h.signup)
+}
+
 type SignupRequest struct {
-	Email    string `json:"email" gorm:"email"`
-	Password string `json:"password" gorm:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-type SignupReply struct {
-	Token string `json:"token"`
+type SignupResponse struct {
+	UserID string `json:"userID"`
+	Token  string `json:"token"`
 }
 
-func (h *AuthHandler) signup(c *gin.Context) {
+func (h *Handler) signup(c *gin.Context) {
 	var signupInfo SignupRequest
-	context := ctx.NewContext(c)
+	context := ctx.Background()
 	if err := c.ShouldBind(&signupInfo); err != nil {
 		context.WithFields(logrus.Fields{
 			"params": signupInfo,
@@ -57,11 +58,29 @@ func (h *AuthHandler) signup(c *gin.Context) {
 		return
 	}
 
+	userID, err := uuid.NewRandom()
+	if err != nil {
+		context.WithField("err", err).Error("uuid.NewRandom failed")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
 	user := models.User{
+		ID:       userID.String(),
 		Email:    signupInfo.Email,
-		Password: hashedPassword,
+		Password: string(hashedPassword),
 		Token:    token.String(),
 	}
 
-	h.DB.Table("users").Create(user)
+	//if err := h.DB.Table("Users").Create(user).Error; err != nil {
+	if err := h.DB.Create(user).Error; err != nil {
+		//if err := h.DB.Exec("Insert into users ('userID', 'email', 'password', 'token') values (?, ?, ?, ?)", user.UserID
+		context.WithField("err", err).Error("Create failed")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, SignupResponse{
+		UserID: userID.String(),
+		Token:  token.String(),
+	})
 }

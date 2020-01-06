@@ -1,5 +1,0 @@
-go: finding github.com/asymptoter/practice/app/server/apis/auth latest
-go: finding github.com/asymptoter/practice/app/server/apis latest
-go: finding github.com/asymptoter/practice/app/server latest
-go: finding github.com/asymptoter/practice/app latest
-build github.com/asymptoter/practice: cannot load github.com/asymptoter/practice/app/server/apis/auth: cannot find module providing package github.com/asymptoter/practice/app/server/apis/auth
