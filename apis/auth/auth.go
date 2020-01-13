@@ -7,18 +7,28 @@ import (
 	"github.com/asymptoter/geochallenge-backend/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v7"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
+)
+
+const (
+	emailActiveAccountMessage = "to be written"
 )
 
 type Handler struct {
-	DB *gorm.DB
+	DB    *gorm.DB
+	Redis *redis.Client
 }
 
-func SetHttpHandler(r *gin.Engine, db *gorm.DB) {
-	h := Handler{DB: db}
+func SetHttpHandler(r *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
+	h := Handler{
+		DB:    db,
+		Redis: redisClient,
+	}
 	r.Handle("POST", "/auth/signup", h.signup)
 }
 
@@ -72,15 +82,35 @@ func (h *Handler) signup(c *gin.Context) {
 		Token:    token.String(),
 	}
 
-	//if err := h.DB.Table("Users").Create(user).Error; err != nil {
 	if err := h.DB.Create(user).Error; err != nil {
-		//if err := h.DB.Exec("Insert into users ('userID', 'email', 'password', 'token') values (?, ?, ?, ?)", user.UserID
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
+
+	/*
+		if err := sendEmail(context, signupInfo.Email, emailActiveAccountMessage); err != nil {
+			context.WithField("err", err).Error("sendEmail failed")
+			c.JSON(http.StatusInternalServerError, err)
+			return
+		}
+	*/
+
 	c.JSON(http.StatusOK, SignupResponse{
 		UserID: userID.String(),
 		Token:  token.String(),
 	})
+}
+
+func sendEmail(context ctx.CTX, email, message string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", "asymptoter@gmail.com")
+	m.SetHeader("To", email)
+	m.SetHeader("Subject", "Active quiz land account")
+	m.SetBody("text/html", message)
+
+	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
+
+	// Send the email to Bob, Cora and Dan.
+	return d.DialAndSend(m)
 }

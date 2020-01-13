@@ -17,6 +17,7 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v7"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -44,6 +45,7 @@ type mysqlConfiguration struct {
 	Username        string `yaml:"username"`
 	Password        string `yaml:"password"`
 	ConnectionRetry int    `yaml:"connectionRetry"`
+	MigrationPath   string `yaml:"migrationPath"`
 }
 
 type redisConfiguration struct {
@@ -81,21 +83,38 @@ func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
 	var err error
 	var db *gorm.DB
 	connectionCount := 0
+	context := ctx.Background()
+	// Connect to mysql
 	for connectionCount < cfg.ConnectionRetry {
 		db, err = gorm.Open("mysql", connectionString)
 		if db != nil && err == nil {
-			return db, nil
+			break
 		}
-		ctx.Background().Error("gorm.Open failed ", err)
+		context.Error("gorm.Open failed ", err)
 		connectionCount++
 		time.Sleep(5 * time.Second)
 	}
-	return nil, err
+
+	return db, err
 }
 
-func newHttpServer(cfg serverConfiguration, db *gorm.DB) *http.Server {
+func setupRedis(cfg redisConfiguration) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.Address,
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	_, err := client.Ping().Result()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func newHttpServer(cfg serverConfiguration, db *gorm.DB, redisClient *redis.Client) *http.Server {
 	r := gin.Default()
-	auth.SetHttpHandler(r, db)
+	auth.SetHttpHandler(r, db, redisClient)
 	r.GET("/home", home)
 
 	return &http.Server{
@@ -115,7 +134,14 @@ func main() {
 	}
 	defer db.Close()
 
-	httpServer := newHttpServer(cfg.Server, db)
+	redisClient, err := setupRedis(cfg.Redis)
+	if err != nil {
+		log.Println("setup Redis failed ", err)
+		return
+	}
+	defer redisClient.Close()
+
+	httpServer := newHttpServer(cfg.Server, db, redisClient)
 	// Start http server
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {

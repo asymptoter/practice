@@ -8,4 +8,4 @@ local:
         password: "password"
         connectionRetry: 5
     redis:
-        address: "127.0.0.1:6379"
+        address: "docker.for.mac.localhost:6379"
