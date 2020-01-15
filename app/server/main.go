@@ -80,10 +80,12 @@ func getConfigYaml(env string) *configuration {
 
 func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
+
 	var err error
 	var db *gorm.DB
 	connectionCount := 0
 	context := ctx.Background()
+	context.Info(connectionString)
 	// Connect to mysql
 	for connectionCount < cfg.ConnectionRetry {
 		db, err = gorm.Open("mysql", connectionString)

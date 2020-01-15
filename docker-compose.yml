@@ -1,4 +1,4 @@
-version: '3'
+version: "3.7"
 services:
     server:
         image: "server:latest"
@@ -10,8 +10,6 @@ services:
             - "redis"
         ports:
             - "8080:8080"
-        links:
-            - mysql:mysql
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/geochallenge-backend/app/server"
         container_name: "server"
@@ -26,18 +24,18 @@ services:
             - "network1"
         container_name: "redis"
     mysql:
-        image: "mysql:8.0"
-        command: --default-authentication-plugin=mysql_native_password
+        image: "mysql:latest"
+        command: --default-authentication-plugin=caching_sha2_password
         environment:
-            MYSQL_DATABASE: "practice"
-            MYSQL_ROOT_PASSWORD: "password"
             MYSQL_USER: "asymptoter"
             MYSQL_PASSWORD: "password"
+            MYSQL_ROOT_PASSWORD: "password"
+            MYSQL_DATABASE: "practice"
         ports:
             - "3306:3306"
         volumes:
             - "./databases/mysql/data:/var/lib/mysql"
-            - "./databases/mysql/init/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+            - "./databases/mysql/init:/docker-entrypoint-initdb.d:ro"
         networks:
             - "network1"
         container_name: "mysql"
