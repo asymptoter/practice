@@ -3,7 +3,9 @@ package auth
 import (
 	"net/http"
 
+	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/geochallenge-backend/base/email"
 	"github.com/asymptoter/geochallenge-backend/models"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +14,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/gomail.v2"
 )
 
 const (
@@ -88,29 +89,16 @@ func (h *Handler) signup(c *gin.Context) {
 		return
 	}
 
-	/*
-		if err := sendEmail(context, signupInfo.Email, emailActiveAccountMessage); err != nil {
-			context.WithField("err", err).Error("sendEmail failed")
-			c.JSON(http.StatusInternalServerError, err)
-			return
-		}
-	*/
+	cfg := config.Value.Server
+	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='" + cfg.Address + "activate/$id/$activasion'>" + cfg.Address + "activate/$id/$activasion</a></p><p>Regards Site Admin</p>"
+	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
+		context.WithField("err", err).Error("sendEmail failed")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
 
 	c.JSON(http.StatusOK, SignupResponse{
 		UserID: userID.String(),
 		Token:  token.String(),
 	})
-}
-
-func sendEmail(context ctx.CTX, email, message string) error {
-	m := gomail.NewMessage()
-	m.SetHeader("From", "asymptoter@gmail.com")
-	m.SetHeader("To", email)
-	m.SetHeader("Subject", "Active quiz land account")
-	m.SetBody("text/html", message)
-
-	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
-
-	// Send the email to Bob, Cora and Dan.
-	return d.DialAndSend(m)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	"github.com/asymptoter/geochallenge-backend/apis/auth"
+	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +21,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	yaml "gopkg.in/yaml.v2"
 )
 
 func home(c *gin.Context) {
@@ -35,50 +34,8 @@ func home(c *gin.Context) {
 	}
 }
 
-type serverConfiguration struct {
-	Address string `yaml:"address"`
-}
-
-type mysqlConfiguration struct {
-	Address         string `yaml:"address"`
-	DatabaseName    string `yaml:"databaseName"`
-	Username        string `yaml:"username"`
-	Password        string `yaml:"password"`
-	ConnectionRetry int    `yaml:"connectionRetry"`
-	MigrationPath   string `yaml:"migrationPath"`
-}
-
-type redisConfiguration struct {
-	Address string `yaml:"address"`
-}
-
-type configuration struct {
-	Server serverConfiguration `yaml:"server"`
-	MySQL  mysqlConfiguration  `yaml:"mysql"`
-	Redis  redisConfiguration  `yaml:"redis"`
-}
-
-type configurations map[string]configuration
-
-func getConfigYaml(env string) *configuration {
-	c := configurations{}
-	file, err := ioutil.ReadFile("../../config/config.yml")
-	if err != nil {
-		log.Println("ioutil.ReadFile failed ", err)
-		return nil
-	}
-
-	if err := yaml.Unmarshal(file, c); err != nil {
-		log.Println("yaml.Unmarshal failed ", err)
-		return nil
-	}
-
-	res := c[env]
-
-	return &res
-}
-
-func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
+func setupMySQL() (*gorm.DB, error) {
+	cfg := config.Value.MySQL
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
 
 	var err error
@@ -100,7 +57,8 @@ func setupMySQL(cfg mysqlConfiguration) (*gorm.DB, error) {
 	return db, err
 }
 
-func setupRedis(cfg redisConfiguration) (*redis.Client, error) {
+func setupRedis() (*redis.Client, error) {
+	cfg := config.Value.Redis
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Address,
 		Password: "", // no password set
@@ -114,7 +72,8 @@ func setupRedis(cfg redisConfiguration) (*redis.Client, error) {
 	return client, nil
 }
 
-func newHttpServer(cfg serverConfiguration, db *gorm.DB, redisClient *redis.Client) *http.Server {
+func newHttpServer(db *gorm.DB, redisClient *redis.Client) *http.Server {
+	cfg := config.Value.Server
 	r := gin.Default()
 	auth.SetHttpHandler(r, db, redisClient)
 	r.GET("/home", home)
@@ -127,23 +86,22 @@ func newHttpServer(cfg serverConfiguration, db *gorm.DB, redisClient *redis.Clie
 
 func main() {
 	flag.Parse()
-	cfg := getConfigYaml("local")
 
-	db, err := setupMySQL(cfg.MySQL)
+	db, err := setupMySQL()
 	if err != nil {
 		log.Println("setup MySQL failed ", err)
 		return
 	}
 	defer db.Close()
 
-	redisClient, err := setupRedis(cfg.Redis)
+	redisClient, err := setupRedis()
 	if err != nil {
 		log.Println("setup Redis failed ", err)
 		return
 	}
 	defer redisClient.Close()
 
-	httpServer := newHttpServer(cfg.Server, db, redisClient)
+	httpServer := newHttpServer(db, redisClient)
 	// Start http server
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {
