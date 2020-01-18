@@ -15,6 +15,7 @@ import (
 	"github.com/asymptoter/geochallenge-backend/apis/auth"
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	_ "github.com/asymptoter/geochallenge-backend/base/email"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v7"

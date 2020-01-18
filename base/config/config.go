@@ -14,9 +14,15 @@ var (
 )
 
 type ServerConfiguration struct {
-	Address               string `yaml:"address"`
-	OfficialEmailAccount  string `yaml:"officialEmailAccount"`
-	OfficialEmailPassword string `yaml:"officialEmailPassword"`
+	Address string             `yaml:"address"`
+	Email   EmailConfiguration `yaml:"email"`
+}
+
+type EmailConfiguration struct {
+	Address          string `yaml:"address"`
+	Port             int    `yaml:"port"`
+	OfficialAccount  string `yaml:"officialAccount"`
+	OfficialPassword string `yaml:"officialPassword"`
 }
 
 type MysqlConfiguration struct {
