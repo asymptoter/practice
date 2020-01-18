@@ -26,7 +26,7 @@ type Handler struct {
 	Redis *redis.Client
 }
 
-func SetHttpHandler(r *gin.Engine, db *gorm.DB, redisClient *redis.Client) {
+func SetHttpHandler(r *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
 	h := Handler{
 		DB:    db,
 		Redis: redisClient,
@@ -92,8 +92,7 @@ func (h *Handler) signup(c *gin.Context) {
 	}
 
 	cfg := config.Value.Server
-	address := "localhost:" + cfg.Address
-
+	address := "localhost" + cfg.Address
 	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='http://" + address + "/auth/activation?id=" + userID + "&activeToken=" + activeToken + "'>Here</a></p><p>Regards Site Admin</p>"
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/asymptoter/geochallenge-backend/apis/auth"
@@ -23,17 +22,6 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
-
-func home(c *gin.Context) {
-	t, err := template.ParseFiles("./index.html")
-	if err != nil {
-		log.Println(err)
-	}
-
-	if err := t.Execute(c.Writer, nil); err != nil {
-		log.Println(err)
-	}
-}
 
 func setupMySQL() (*gorm.DB, error) {
 	cfg := config.Value.MySQL
@@ -76,8 +64,8 @@ func setupRedis() (*redis.Client, error) {
 func newHttpServer(db *gorm.DB, redisClient *redis.Client) *http.Server {
 	cfg := config.Value.Server
 	r := gin.Default()
-	auth.SetHttpHandler(r, db, redisClient)
-	r.GET("/home", home)
+	v1 := r.Group("/api/v1")
+	auth.SetHttpHandler(v1, db, redisClient)
 
 	return &http.Server{
 		Addr:    cfg.Address,
