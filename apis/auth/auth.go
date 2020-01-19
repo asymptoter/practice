@@ -92,8 +92,8 @@ func (h *Handler) signup(c *gin.Context) {
 	}
 
 	cfg := config.Value.Server
-	address := "localhost" + cfg.Address
-	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='http://" + address + "/auth/activation?id=" + userID + "&activeToken=" + activeToken + "'>Here</a></p><p>Regards Site Admin</p>"
+	query := "http://" + cfg.Address + "/api/v1/auth/activation?id" + userID + "&activeToken=" + activeToken
+	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='" + query + "'>Here</a></p><p>Regards Site Admin</p>"
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
 		context.WithField("err", err).Error("sendEmail failed")
@@ -129,7 +129,7 @@ func (h *Handler) activation(c *gin.Context) {
 	}
 
 	user := models.User{ID: userID}
-	if err := h.DB.Model(&user).Update("activated", 1).Error; err != nil {
+	if err := h.DB.Model(&user).Update("activation_number", 1).Error; err != nil {
 		context.WithField("err", err).Error("DB.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return

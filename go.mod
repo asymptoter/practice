@@ -9,6 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/uuid v1.1.1
 	github.com/jinzhu/gorm v1.9.11
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/pressly/goose v2.6.0+incompatible
 	github.com/sirupsen/logrus v1.2.0
 	gitlab.silkrode.com.tw/golang/log v1.0.2
