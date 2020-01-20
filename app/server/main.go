@@ -65,7 +65,7 @@ func newHttpServer(db *gorm.DB, redisClient *redis.Client) *http.Server {
 	cfg := config.Value.Server
 	r := gin.Default()
 	v1 := r.Group("/api/v1")
-	auth.SetHttpHandler(v1, db, redisClient)
+	auth.SetHttpHandler(v1.Group("/auth"), db, redisClient)
 
 	return &http.Server{
 		Addr:    cfg.Address,
