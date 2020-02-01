@@ -10,24 +10,24 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 	"github.com/asymptoter/geochallenge-backend/base/email"
 	"github.com/asymptoter/geochallenge-backend/models"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v7"
 	"github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
-	DB    *gorm.DB
-	Redis *redis.Client
+	mysql *sqlx.DB
+	redis *redis.Client
 }
 
-func SetHttpHandler(r *gin.RouterGroup, db *gorm.DB, redisClient *redis.Client) {
+func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisClient *redis.Client) {
 	h := Handler{
-		DB:    db,
-		Redis: redisClient,
+		mysql: db,
+		redis: redisClient,
 	}
 
 	r.Handle("POST", "/signup", h.signup)
@@ -75,18 +75,18 @@ func (h *Handler) signup(c *gin.Context) {
 		Token:    token,
 	}
 
-	if err := h.DB.Create(user).Error; err != nil {
+	if _, err := h.mysql.Exec("INSERT INTO users (id, email, password, token) VALUES (?, ?, ?, ?)", user.ID, user.Email, user.Password, user.Token); err != nil {
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	activeAccountKey := "auth:active:" + userID
-	if err := h.Redis.Set(activeAccountKey, activeToken, 24*time.Hour).Err(); err != nil {
+	if err := h.redis.Set(activeAccountKey, activeToken, 24*time.Hour).Err(); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": userID,
-		}).Error("Redis.Set failed")
+		}).Error("redis.Set failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -113,12 +113,12 @@ func (h *Handler) activation(c *gin.Context) {
 	context := ctx.Background()
 
 	activeAccountKey := "auth:active:" + userID
-	val, err := h.Redis.Get(activeAccountKey).Result()
+	val, err := h.redis.Get(activeAccountKey).Result()
 	if err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": userID,
-		}).Error("Redis.Get failed")
+		}).Error("redis.Get failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -128,9 +128,8 @@ func (h *Handler) activation(c *gin.Context) {
 		return
 	}
 
-	user := models.User{ID: userID}
-	if err := h.DB.Model(&user).Update("activation_number", 1).Error; err != nil {
-		context.WithField("err", err).Error("DB.Update failed")
+	if _, err := h.mysql.Exec("UPDATE users SET activation_number=? WHERE id=?", 1, userID); err != nil {
+		context.WithField("err", err).Error("mysql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -164,7 +163,7 @@ func (h *Handler) login(c *gin.Context) {
 	}
 
 	user := models.User{}
-	if err := h.DB.Where("email = ?", user.Email).First(&user).Error; err != nil {
+	if err := h.mysql.Get(&user, "SELECT password FROM users where email = ?", user.Email); err != nil {
 		context.WithField("err", err).Error("Where failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -191,8 +190,8 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
-	if err := h.Redis.Set(userInfoKey, string(b), 24*time.Hour).Err(); err != nil {
-		context.WithField("err", err).Error("Redis.Set failed")
+	if err := h.redis.Set(userInfoKey, string(b), 24*time.Hour).Err(); err != nil {
+		context.WithField("err", err).Error("redis.Set failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}

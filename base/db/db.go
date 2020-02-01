@@ -7,6 +7,7 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -18,9 +19,11 @@ func NewMySQL() (*sqlx.DB, error) {
 	var db *sqlx.DB
 	connectionCount := 0
 	context := ctx.Background()
+	fmt.Println(connectionString)
+	fmt.Println("retry:", cfg.ConnectionRetry)
 	// Connect to MySQL
 	for connectionCount < cfg.ConnectionRetry {
-		db, err := sqlx.Connect("mysql", connectionString)
+		db, err = sqlx.Connect("mysql", connectionString)
 		if db != nil && err == nil {
 			break
 		}

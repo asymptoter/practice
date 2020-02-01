@@ -4,7 +4,7 @@ services:
         image: "server:latest"
         build: 
             context: .
-            dockerfile: "Dockerfile-server"
+            dockerfile: "Dockerfile"
         depends_on:
             - "mysql"
             - "redis"
@@ -13,15 +13,11 @@ services:
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/geochallenge-backend/app/server"
         container_name: "server"
-        #networks:
-        #    - "network1"
         restart: always
     redis:
         image: "redis:alpine"
         ports:
             - "6379:6379"
-              #networks:
-              #- "network1"
         container_name: "redis"
     mysql:
         image: "mysql:latest"
@@ -36,9 +32,4 @@ services:
         volumes:
             - "./databases/mysql/data:/var/lib/mysql"
             - "./databases/mysql/init:/docker-entrypoint-initdb.d:ro"
-              #networks:
-              #- "network1"
         container_name: "mysql"
-            #networks:
-            #network1:
-            #driver: "bridge"
