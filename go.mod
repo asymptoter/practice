@@ -15,6 +15,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/pressly/goose v2.6.0+incompatible
 	github.com/sirupsen/logrus v1.2.0
+	github.com/stretchr/testify v1.4.0
 	gitlab.silkrode.com.tw/golang/log v1.0.2
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a // indirect
@@ -22,6 +23,7 @@ require (
 	golang.org/x/tools v0.0.0-20200125223703-d33eef8e6825 // indirect
 	google.golang.org/genproto v0.0.0-20200122232147-0452cf42e150 // indirect
 	google.golang.org/grpc v1.26.0
+	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/yaml.v2 v2.2.7
 )

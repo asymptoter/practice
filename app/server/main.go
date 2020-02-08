@@ -14,37 +14,11 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/db"
 	_ "github.com/asymptoter/geochallenge-backend/base/email"
-	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v7"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/jmoiron/sqlx"
 )
-
-/*
-func setupMySQL() (*gorm.DB, error) {
-	cfg := config.Value.MySQL
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
-
-	var err error
-	var db *gorm.DB
-	connectionCount := 0
-	context := ctx.Background()
-	context.Info(connectionString)
-	// Connect to mysql
-	for connectionCount < cfg.ConnectionRetry {
-		db, err = gorm.Open("mysql", connectionString)
-		if db != nil && err == nil {
-			break
-		}
-		context.Error("gorm.Open failed ", err)
-		connectionCount++
-		time.Sleep(5 * time.Second)
-	}
-
-	return db, err
-}
-*/
 
 func setupRedis() (*redis.Client, error) {
 	cfg := config.Value.Redis
@@ -64,6 +38,11 @@ func setupRedis() (*redis.Client, error) {
 func newHttpServer(db *sqlx.DB, redisClient *redis.Client) *http.Server {
 	cfg := config.Value.Server
 	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
 	v1 := r.Group("/api/v1")
 	auth.SetHttpHandler(v1.Group("/auth"), db, redisClient)
 
@@ -75,6 +54,7 @@ func newHttpServer(db *sqlx.DB, redisClient *redis.Client) *http.Server {
 
 func main() {
 	flag.Parse()
+	config.Init()
 
 	db, err := db.NewMySQL()
 	if err != nil {

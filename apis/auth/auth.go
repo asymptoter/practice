@@ -75,7 +75,7 @@ func (h *Handler) signup(c *gin.Context) {
 		Token:    token,
 	}
 
-	if _, err := h.mysql.Exec("INSERT INTO users (id, email, password, token) VALUES (?, ?, ?, ?)", user.ID, user.Email, user.Password, user.Token); err != nil {
+	if _, err := h.mysql.Exec("INSERT INTO users (id, email, password, token, activation_number) VALUES (?, ?, ?, ?, ?)", user.ID, user.Email, user.Password, user.Token, 0); err != nil {
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return

@@ -43,7 +43,7 @@ type Configuration struct {
 	Redis  RedisConfiguration  `yaml:"redis"`
 }
 
-func init() {
+func Init() {
 	file, err := ioutil.ReadFile("../../config/config.yml")
 	if err != nil {
 		panic("ioutil.ReadFile failed " + err.Error())
