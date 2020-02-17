@@ -1,14 +1,29 @@
 package game
 
-type GameInfo struct {
-}
+import (
+	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/geochallenge-backend/models"
 
-type GameResult struct {
-}
-
-type Quiz struct {
-}
+	"github.com/go-redis/redis/v7"
+	"github.com/jmoiron/sqlx"
+)
 
 type Store interface {
-	Result(context ctx.CTX, userInfo *user.User, gameInfo *GameInfo) (GameResult, error)
+	CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer, countDown int) error
+}
+
+type impl struct {
+	mysql *sqlx.DB
+	redis *redis.Client
+}
+
+func NewStore(db *sqlx.DB, redis *redis.Client) Store {
+	return &impl{
+		mysql: db,
+		redis: redis,
+	}
+}
+
+func (g *impl) CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer, countDown int) error {
+	return nil
 }

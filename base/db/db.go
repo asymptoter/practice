@@ -11,6 +11,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+func MustNewMySQL() *sqlx.DB {
+	res, err := NewMySQL()
+	if err != nil {
+		panic("NewMySQL failed by " + err.Error())
+	}
+	return res
+}
+
 func NewMySQL() (*sqlx.DB, error) {
 	cfg := config.Value.MySQL
 	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)

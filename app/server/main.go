@@ -10,10 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/asymptoter/geochallenge-backend/apis/auth"
+	authApi "github.com/asymptoter/geochallenge-backend/apis/auth"
+	gameApi "github.com/asymptoter/geochallenge-backend/apis/game"
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/db"
 	_ "github.com/asymptoter/geochallenge-backend/base/email"
+	"github.com/asymptoter/geochallenge-backend/store/game"
+	"github.com/asymptoter/geochallenge-backend/store/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v7"
@@ -44,7 +47,10 @@ func newHttpServer(db *sqlx.DB, redisClient *redis.Client) *http.Server {
 		})
 	})
 	v1 := r.Group("/api/v1")
-	auth.SetHttpHandler(v1.Group("/auth"), db, redisClient)
+	userStore := user.NewStore(db, redisClient)
+	gameStore := game.NewStore(db, redisClient)
+	authApi.SetHttpHandler(v1.Group("/auth"), db, redisClient, userStore)
+	gameApi.SetHttpHandler(v1.Group("/user"), db, redisClient, gameStore, userStore)
 
 	return &http.Server{
 		Addr:    cfg.Address,
@@ -56,11 +62,7 @@ func main() {
 	flag.Parse()
 	config.Init()
 
-	db, err := db.NewMySQL()
-	if err != nil {
-		log.Println("setup MySQL failed ", err)
-		return
-	}
+	db := db.MustNewMySQL()
 	defer db.Close()
 
 	redisClient, err := setupRedis()

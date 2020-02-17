@@ -10,6 +10,7 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 	"github.com/asymptoter/geochallenge-backend/base/email"
 	"github.com/asymptoter/geochallenge-backend/models"
+	"github.com/asymptoter/geochallenge-backend/store/user"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
@@ -19,15 +20,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Handler struct {
+type handler struct {
 	mysql *sqlx.DB
 	redis *redis.Client
+	user  user.Store
 }
 
-func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisClient *redis.Client) {
-	h := Handler{
+func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisClient *redis.Client, us user.Store) {
+	h := handler{
 		mysql: db,
 		redis: redisClient,
+		user:  us,
 	}
 
 	r.Handle("POST", "/signup", h.signup)
@@ -45,7 +48,7 @@ type SignupResponse struct {
 	Token  string `json:"token"`
 }
 
-func (h *Handler) signup(c *gin.Context) {
+func (h *handler) signup(c *gin.Context) {
 	var signupInfo SignupRequest
 	context := ctx.Background()
 	if err := c.ShouldBind(&signupInfo); err != nil {
@@ -107,7 +110,7 @@ func (h *Handler) signup(c *gin.Context) {
 	})
 }
 
-func (h *Handler) activation(c *gin.Context) {
+func (h *handler) activation(c *gin.Context) {
 	userID := c.Query("id")
 	activeToken := c.Query("activeToken")
 	context := ctx.Background()
@@ -142,7 +145,7 @@ type loginRequest struct {
 	Password string
 }
 
-func (h *Handler) login(c *gin.Context) {
+func (h *handler) login(c *gin.Context) {
 	var loginInfo loginRequest
 	context := ctx.Background()
 	if err := c.ShouldBind(&loginInfo); err != nil {
