@@ -15,30 +15,15 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/db"
 	_ "github.com/asymptoter/geochallenge-backend/base/email"
+	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/store/game"
 	"github.com/asymptoter/geochallenge-backend/store/user"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v7"
 	"github.com/jmoiron/sqlx"
 )
 
-func setupRedis() (*redis.Client, error) {
-	cfg := config.Value.Redis
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Address,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	_, err := client.Ping().Result()
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-func newHttpServer(db *sqlx.DB, redisClient *redis.Client) *http.Server {
+func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 	cfg := config.Value.Server
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -47,10 +32,10 @@ func newHttpServer(db *sqlx.DB, redisClient *redis.Client) *http.Server {
 		})
 	})
 	v1 := r.Group("/api/v1")
-	userStore := user.NewStore(db, redisClient)
-	gameStore := game.NewStore(db, redisClient)
-	authApi.SetHttpHandler(v1.Group("/auth"), db, redisClient, userStore)
-	gameApi.SetHttpHandler(v1.Group("/user"), db, redisClient, gameStore, userStore)
+	userStore := user.NewStore(db, redisService)
+	gameStore := game.NewStore(db, redisService)
+	authApi.SetHttpHandler(v1.Group("/auth"), db, redisService, userStore)
+	gameApi.SetHttpHandler(v1.Group("/user"), db, redisService, gameStore, userStore)
 
 	return &http.Server{
 		Addr:    cfg.Address,
@@ -65,14 +50,9 @@ func main() {
 	db := db.MustNewMySQL()
 	defer db.Close()
 
-	redisClient, err := setupRedis()
-	if err != nil {
-		log.Println("setup Redis failed ", err)
-		return
-	}
-	defer redisClient.Close()
+	redisService := redis.NewService()
 
-	httpServer := newHttpServer(db, redisClient)
+	httpServer := newHttpServer(db, redisService)
 	// Start http server
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {

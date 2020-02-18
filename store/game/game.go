@@ -2,9 +2,9 @@ package game
 
 import (
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/models"
 
-	"github.com/go-redis/redis/v7"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,13 +14,13 @@ type Store interface {
 
 type impl struct {
 	mysql *sqlx.DB
-	redis *redis.Client
+	redis redis.Service
 }
 
-func NewStore(db *sqlx.DB, redis *redis.Client) Store {
+func NewStore(db *sqlx.DB, redisService redis.Service) Store {
 	return &impl{
 		mysql: db,
-		redis: redis,
+		redis: redisService,
 	}
 }
 

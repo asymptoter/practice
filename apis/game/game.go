@@ -5,26 +5,26 @@ import (
 
 	"github.com/asymptoter/geochallenge-backend/apis/middleware"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/models"
 	"github.com/asymptoter/geochallenge-backend/store/game"
 	"github.com/asymptoter/geochallenge-backend/store/user"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v7"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 )
 
 type handler struct {
 	mysql *sqlx.DB
-	redis *redis.Client
+	redis redis.Service
 	game  game.Store
 }
 
-func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisClient *redis.Client, gs game.Store, us user.Store) {
+func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, gs game.Store, us user.Store) {
 	h := &handler{
 		mysql: db,
-		redis: redisClient,
+		redis: redisService,
 		game:  gs,
 	}
 

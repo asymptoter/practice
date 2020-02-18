@@ -9,12 +9,12 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 	"github.com/asymptoter/geochallenge-backend/base/email"
+	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/models"
 	"github.com/asymptoter/geochallenge-backend/store/user"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v7"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -22,14 +22,14 @@ import (
 
 type handler struct {
 	mysql *sqlx.DB
-	redis *redis.Client
+	redis redis.Service
 	user  user.Store
 }
 
-func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisClient *redis.Client, us user.Store) {
+func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, us user.Store) {
 	h := handler{
 		mysql: db,
-		redis: redisClient,
+		redis: redisService,
 		user:  us,
 	}
 
@@ -85,7 +85,7 @@ func (h *handler) signup(c *gin.Context) {
 	}
 
 	activeAccountKey := "auth:active:" + userID
-	if err := h.redis.Set(activeAccountKey, activeToken, 24*time.Hour).Err(); err != nil {
+	if err := h.redis.Set(context, activeAccountKey, activeToken, 24*time.Hour); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": userID,
@@ -116,7 +116,7 @@ func (h *handler) activation(c *gin.Context) {
 	context := ctx.Background()
 
 	activeAccountKey := "auth:active:" + userID
-	val, err := h.redis.Get(activeAccountKey).Result()
+	val, err := h.redis.Get(context, activeAccountKey)
 	if err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
@@ -126,7 +126,7 @@ func (h *handler) activation(c *gin.Context) {
 		return
 	}
 
-	if val != activeToken {
+	if string(val) != activeToken {
 		c.JSON(http.StatusBadRequest, "Invalid token")
 		return
 	}
@@ -193,7 +193,7 @@ func (h *handler) login(c *gin.Context) {
 		return
 	}
 
-	if err := h.redis.Set(userInfoKey, string(b), 24*time.Hour).Err(); err != nil {
+	if err := h.redis.Set(context, userInfoKey, string(b), 24*time.Hour); err != nil {
 		context.WithField("err", err).Error("redis.Set failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
