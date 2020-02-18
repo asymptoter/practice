@@ -5,7 +5,8 @@ import (
 
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
-	"github.com/go-redis/redis/v7"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 type Service interface {
@@ -14,27 +15,30 @@ type Service interface {
 }
 
 type impl struct {
-	redis *redis.Client
+	redis *redis.Pool
 }
 
 func NewService() Service {
 	cfg := config.Value.Redis
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Address,
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+
+	pool := &redis.Pool{
+		MaxIdle:     5,
+		IdleTimeout: 240 * time.Second,
+		// Dial or DialContext must be set. When both are set, DialContext takes precedence over Dial.
+		Dial: func() (redis.Conn, error) { return redis.Dial("tcp", cfg.Address) },
+	}
 
 	return &impl{
-		redis: client,
+		redis: pool,
 	}
 }
 
 func (r *impl) Get(context ctx.CTX, key string) ([]byte, error) {
-	return []byte{}, nil
+	val, err := r.redis.Get().Do("GET", key)
+	return val.([]byte), err
 }
 
 func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
-	//redis.Set("a", "b", time.Hour)
-	return nil
+	_, err := r.redis.Get().Do("SET", key, value, expiration)
+	return err
 }
