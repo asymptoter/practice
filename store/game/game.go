@@ -1,6 +1,8 @@
 package game
 
 import (
+	"errors"
+
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/models"
@@ -9,7 +11,7 @@ import (
 )
 
 type Store interface {
-	CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer, countDown int) error
+	CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer int) error
 }
 
 type impl struct {
@@ -24,6 +26,19 @@ func NewStore(db *sqlx.DB, redisService redis.Service) Store {
 	}
 }
 
-func (g *impl) CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer, countDown int) error {
+func (g *impl) CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer int) error {
+	// Check input
+	if len(options) < 2 {
+		return errors.New("number of options should be greater than 1")
+	}
+	if answer < 0 || answer >= len(options) {
+		return errors.New("invalid answer")
+	}
+
+	// Write db
+	if _, err := g.mysql.Exec("INSERT INTO quizzes (content, option1, option2, option3, option4, answer, creator) VALUES(?, ?, ?, ?, ?, ?, ?)", content, options[0], options[1], options[2], options[3], answer, user.ID); err != nil {
+		context.WithField("err", err).Error("CreateQuiz failed at mysql.Exec")
+		return err
+	}
 	return nil
 }
