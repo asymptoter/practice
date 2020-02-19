@@ -33,12 +33,22 @@ func NewService() Service {
 	}
 }
 
+func Close(context ctx.CTX, functionName string, conn redis.Conn) {
+	if err := conn.Close(); err != nil {
+		context.WithField("err", err).Error(functionName + " failed at Close")
+	}
+}
+
 func (r *impl) Get(context ctx.CTX, key string) ([]byte, error) {
-	val, err := r.redis.Get().Do("GET", key)
+	conn := r.redis.Get()
+	val, err := conn.Do("GET", key)
+	defer Close(context, "Get", conn)
 	return val.([]byte), err
 }
 
 func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
-	_, err := r.redis.Get().Do("SET", key, value, expiration)
+	conn := r.redis.Get()
+	_, err := conn.Do("SET", key, value, expiration)
+	defer Close(context, "Set", conn)
 	return err
 }
