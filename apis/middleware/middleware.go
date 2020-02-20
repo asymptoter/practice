@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
-	"github.com/asymptoter/geochallenge-backend/store/user"
+	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/store/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/asymptoter/geochallenge-backend/base/config"
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/base/config"
+	"github.com/asymptoter/practice-backend/base/ctx"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"

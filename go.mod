@@ -1,4 +1,4 @@
-module github.com/asymptoter/geochallenge-backend
+module github.com/asymptoter/practice-backend
 
 go 1.13
 

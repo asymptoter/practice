@@ -3,8 +3,8 @@ package email
 import (
 	"crypto/tls"
 
-	"github.com/asymptoter/geochallenge-backend/base/config"
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/base/config"
+	"github.com/asymptoter/practice-backend/base/ctx"
 
 	"gopkg.in/gomail.v2"
 )
@@ -27,7 +27,7 @@ func Send(context ctx.CTX, email, message string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", officialAccount)
 	m.SetHeader("To", email)
-	m.SetHeader("Subject", "Active geochallenge account")
+	m.SetHeader("Subject", "Active practice account")
 	m.SetBody("text/html", message)
 
 	d := gomail.NewDialer(smtpAddress, smtpPort, officialAccount, officialPassword)

@@ -3,12 +3,12 @@ package trivia
 import (
 	"net/http"
 
-	"github.com/asymptoter/geochallenge-backend/apis/middleware"
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
-	"github.com/asymptoter/geochallenge-backend/base/redis"
-	"github.com/asymptoter/geochallenge-backend/models"
-	"github.com/asymptoter/geochallenge-backend/store/trivia"
-	"github.com/asymptoter/geochallenge-backend/store/user"
+	"github.com/asymptoter/practice-backend/apis/middleware"
+	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/models"
+	"github.com/asymptoter/practice-backend/store/trivia"
+	"github.com/asymptoter/practice-backend/store/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"

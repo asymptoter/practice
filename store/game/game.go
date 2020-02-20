@@ -3,9 +3,9 @@ package trivia
 import (
 	"errors"
 
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
-	"github.com/asymptoter/geochallenge-backend/base/redis"
-	"github.com/asymptoter/geochallenge-backend/models"
+	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/models"
 
 	"github.com/jmoiron/sqlx"
 )

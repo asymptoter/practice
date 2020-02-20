@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/asymptoter/geochallenge-backend/apis/auth"
+	"github.com/asymptoter/practice-backend/apis/auth"
 	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/suite"

@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/asymptoter/geochallenge-backend/base/config"
-	"github.com/asymptoter/geochallenge-backend/base/ctx"
-	"github.com/asymptoter/geochallenge-backend/base/email"
-	"github.com/asymptoter/geochallenge-backend/base/redis"
-	"github.com/asymptoter/geochallenge-backend/models"
-	"github.com/asymptoter/geochallenge-backend/store/user"
+	"github.com/asymptoter/practice-backend/base/config"
+	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/asymptoter/practice-backend/base/email"
+	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/models"
+	"github.com/asymptoter/practice-backend/store/user"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/gin-gonic/gin"
