@@ -33,3 +33,8 @@ services:
             - "./databases/mysql/data:/var/lib/mysql"
             - "./databases/mysql/init:/docker-entrypoint-initdb.d:ro"
         container_name: "mysql"
+    postgres:
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: test
