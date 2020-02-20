@@ -1,4 +1,4 @@
-package game
+package trivia
 
 import (
 	"net/http"
@@ -7,7 +7,7 @@ import (
 	"github.com/asymptoter/geochallenge-backend/base/ctx"
 	"github.com/asymptoter/geochallenge-backend/base/redis"
 	"github.com/asymptoter/geochallenge-backend/models"
-	"github.com/asymptoter/geochallenge-backend/store/game"
+	"github.com/asymptoter/geochallenge-backend/store/trivia"
 	"github.com/asymptoter/geochallenge-backend/store/user"
 
 	"github.com/gin-gonic/gin"
@@ -16,16 +16,16 @@ import (
 )
 
 type handler struct {
-	mysql *sqlx.DB
-	redis redis.Service
-	game  game.Store
+	mysql  *sqlx.DB
+	redis  redis.Service
+	trivia trivia.Store
 }
 
-func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, gs game.Store, us user.Store) {
+func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, gs trivia.Store, us user.Store) {
 	h := &handler{
-		mysql: db,
-		redis: redisService,
-		game:  gs,
+		mysql:  db,
+		redis:  redisService,
+		trivia: gs,
 	}
 
 	r.Use(middleware.GetUser(us))
@@ -34,9 +34,9 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 	r.Handle("GET", "/quiz", h.getQuiz)
 	r.Handle("GET", "/quizzes", h.listQuizzes)
 	r.Handle("DELETE", "/quiz", h.deleteQuiz)
-	r.Handle("POST", "/game", h.createGame)
-	r.Handle("GET", "/game", h.getGame)
-	r.Handle("GET", "/games", h.listGames)
+	r.Handle("POST", "/trivia", h.createGame)
+	r.Handle("GET", "/trivia", h.getGame)
+	r.Handle("GET", "/trivias", h.listGames)
 	r.Handle("POST", "/answer", h.answer)
 }
 
@@ -62,7 +62,7 @@ func (h *handler) createQuiz(c *gin.Context) {
 		return
 	}
 
-	if err := h.game.CreateQuiz(context, user, req.Content, req.Options, req.Answer, req.CountDown); err != nil {
+	if err := h.trivia.CreateQuiz(context, user, req.Content, req.Options, req.Answer, req.CountDown); err != nil {
 		context.WithFields(logrus.Fields{
 			"params": req,
 			"userID": user.ID,

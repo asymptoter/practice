@@ -11,12 +11,12 @@ import (
 	"time"
 
 	authApi "github.com/asymptoter/geochallenge-backend/apis/auth"
-	gameApi "github.com/asymptoter/geochallenge-backend/apis/game"
+	triviaApi "github.com/asymptoter/geochallenge-backend/apis/trivia"
 	"github.com/asymptoter/geochallenge-backend/base/config"
 	"github.com/asymptoter/geochallenge-backend/base/db"
 	_ "github.com/asymptoter/geochallenge-backend/base/email"
 	"github.com/asymptoter/geochallenge-backend/base/redis"
-	"github.com/asymptoter/geochallenge-backend/store/game"
+	"github.com/asymptoter/geochallenge-backend/store/trivia"
 	"github.com/asymptoter/geochallenge-backend/store/user"
 
 	"github.com/gin-gonic/gin"
@@ -33,9 +33,9 @@ func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 	})
 	v1 := r.Group("/api/v1")
 	userStore := user.NewStore(db, redisService)
-	gameStore := game.NewStore(db, redisService)
+	triviaStore := trivia.NewStore(db, redisService)
 	authApi.SetHttpHandler(v1.Group("/auth"), db, redisService, userStore)
-	gameApi.SetHttpHandler(v1.Group("/user"), db, redisService, gameStore, userStore)
+	triviaApi.SetHttpHandler(v1.Group("/user"), db, redisService, triviaStore, userStore)
 
 	return &http.Server{
 		Addr:    cfg.Address,

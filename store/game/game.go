@@ -1,4 +1,4 @@
-package game
+package trivia
 
 import (
 	"errors"
