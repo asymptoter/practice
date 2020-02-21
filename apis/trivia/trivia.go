@@ -34,9 +34,9 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 	r.Handle("GET", "/quiz", h.getQuiz)
 	r.Handle("GET", "/quizzes", h.listQuizzes)
 	r.Handle("DELETE", "/quiz", h.deleteQuiz)
-	r.Handle("POST", "/trivia", h.createGame)
-	r.Handle("GET", "/trivia", h.getGame)
-	r.Handle("GET", "/trivias", h.listGames)
+	r.Handle("POST", "/game", h.createGame)
+	r.Handle("GET", "/game", h.getGame)
+	r.Handle("GET", "/games", h.listGames)
 	r.Handle("POST", "/answer", h.answer)
 }
 
