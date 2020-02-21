@@ -8,12 +8,14 @@ services:
         depends_on:
             - "mysql"
             - "redis"
+            - postgres
         ports:
             - "8080:8080"
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/practice-backend/app/server"
         container_name: "server"
         restart: always
+        command: ["../../scripts/wait-for-it.sh", "mysql:3306", "--", "go", "run", "main.go"]
     redis:
         image: "redis:alpine"
         ports:
@@ -38,3 +40,6 @@ services:
         restart: always
         environment:
             POSTGRES_PASSWORD: test
+        ports:
+            - 5432:5432
+        container_name: postgres
