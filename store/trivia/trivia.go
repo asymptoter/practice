@@ -11,7 +11,8 @@ import (
 )
 
 type Store interface {
-	CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer int) error
+	CreateQuiz(context ctx.CTX, userID, content string, options []string, answer int) error
+	GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error)
 }
 
 type impl struct {
@@ -26,7 +27,7 @@ func NewStore(db *sqlx.DB, redisService redis.Service) Store {
 	}
 }
 
-func (g *impl) CreateQuiz(context ctx.CTX, user *models.User, content string, options []string, answer int) error {
+func (s *impl) CreateQuiz(context ctx.CTX, userID, content string, options []string, answer int) error {
 	// Check input
 	if len(options) < 2 {
 		return errors.New("number of options should be greater than 1")
@@ -36,9 +37,13 @@ func (g *impl) CreateQuiz(context ctx.CTX, user *models.User, content string, op
 	}
 
 	// Write db
-	if _, err := g.mysql.Exec("INSERT INTO quizzes (content, option1, option2, option3, option4, answer, creator) VALUES(?, ?, ?, ?, ?, ?, ?)", content, options[0], options[1], options[2], options[3], answer, user.ID); err != nil {
+	if _, err := s.mysql.Exec("INSERT INTO quizzes (content, option1, option2, option3, option4, answer, creator) VALUES(?, ?, ?, ?, ?, ?, ?)", content, options[0], options[1], options[2], options[3], answer, userID); err != nil {
 		context.WithField("err", err).Error("CreateQuiz failed at mysql.Exec")
 		return err
 	}
 	return nil
+}
+
+func (s *impl) GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error) {
+	return []*models.Quiz{}, nil
 }

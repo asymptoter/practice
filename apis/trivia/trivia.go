@@ -30,13 +30,21 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 
 	r.Use(middleware.GetUser(us))
 
+	// Create a quiz
 	r.Handle("POST", "/quiz", h.createQuiz)
-	r.Handle("GET", "/quiz", h.getQuiz)
-	r.Handle("GET", "/quizzes", h.listQuizzes)
+	// List quizzes created by creator
+	r.Handle("GET", "/quizzes", h.getQuizzes)
+	// Delete a quiz created by creator
 	r.Handle("DELETE", "/quiz", h.deleteQuiz)
+	// Create a game
 	r.Handle("POST", "/game", h.createGame)
+	// Play a game
 	r.Handle("GET", "/game", h.getGame)
-	r.Handle("GET", "/games", h.listGames)
+	// List games created by creator
+	r.Handle("GET", "/games", h.getGames)
+	// Delete game created by creator
+	r.Handle("DELETE", "game", h.deleteGame)
+	// Answer a quiz in a game
 	r.Handle("POST", "/answer", h.answer)
 }
 
@@ -62,7 +70,7 @@ func (h *handler) createQuiz(c *gin.Context) {
 		return
 	}
 
-	if err := h.trivia.CreateQuiz(context, user, req.Content, req.Options, req.Answer); err != nil {
+	if err := h.trivia.CreateQuiz(context, user.ID, req.Content, req.Options, req.Answer); err != nil {
 		context.WithFields(logrus.Fields{
 			"params": req,
 			"userID": user.ID,
@@ -74,10 +82,7 @@ func (h *handler) createQuiz(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-func (h *handler) getQuiz(c *gin.Context) {
-}
-
-func (h *handler) listQuizzes(c *gin.Context) {
+func (h *handler) getQuizzes(c *gin.Context) {
 }
 func (h *handler) deleteQuiz(c *gin.Context) {
 }
@@ -85,7 +90,7 @@ func (h *handler) createGame(c *gin.Context) {
 }
 func (h *handler) getGame(c *gin.Context) {
 }
-func (h *handler) listGames(c *gin.Context) {
+func (h *handler) getGames(c *gin.Context) {
 }
 func (h *handler) answer(c *gin.Context) {
 }
