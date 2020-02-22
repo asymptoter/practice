@@ -39,5 +39,6 @@ jobs:
           command: |
               echo 'export PATH=$PATH:/usr/local/bin/' >> $BASH_ENV
               echo $PATH
+              exec bash
 
       - run: docker-compose build && docker-compose up
