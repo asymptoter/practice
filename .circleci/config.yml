@@ -25,4 +25,4 @@ jobs:
           docker_layer_cacheing: true
 
       # specify any bash command here prefixed with `run: `
-      - run: chmod 755 entry.sh && ./entry.sh
+      - run: docker-compose build && docker-compose up
