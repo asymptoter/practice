@@ -19,7 +19,11 @@ jobs:
     ####   /go/src/bitbucket.org/circleci/go-tool
     working_directory: /go/src/github.com/asymptoter/practice-backend
     steps:
-      - checkout 
+      - checkout
+
+      - run:
+          name: Install curl
+          command: apk update && apk add curl curl-dev bash
       
       - setup_remote_docker:
           docker_layer_cacheing: true
