@@ -19,10 +19,17 @@ jobs:
     ####   /go/src/bitbucket.org/circleci/go-tool
     working_directory: /go/src/github.com/asymptoter/practice-backend
     steps:
-      - checkout
+      - checkout 
       
       - setup_remote_docker:
           docker_layer_cacheing: true
+
+      - run:
+          name: Install Docker Compose
+          command: |
+            set -x
+            curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
 
       # specify any bash command here prefixed with `run: `
       - run: docker-compose build && docker-compose up
