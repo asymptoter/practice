@@ -25,4 +25,4 @@ jobs:
           docker_layer_cacheing: true
 
       # specify any bash command here prefixed with `run: `
-      - run: pwd && ls
+      - run: chmod 755 entry.sh && ./entry.sh
