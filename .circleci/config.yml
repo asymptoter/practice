@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.13-alpine
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -20,6 +20,9 @@ jobs:
     working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
     steps:
       - checkout
+      
+      - setup_remote_docker:
+          docker_layer_cacheing: true
 
       # specify any bash command here prefixed with `run: `
-      - run: ./entry.sh
+      - run: ./entry.sh 
