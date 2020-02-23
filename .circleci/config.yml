@@ -4,7 +4,6 @@
 version: 2
 jobs:
   build:
-    shell: /bin/bash
     docker:
       # specify the version
       - image: golang:1.13-alpine
@@ -41,4 +40,8 @@ jobs:
               echo 'export PATH=$PATH:/usr/local/bin/' >> $BASH_ENV
               echo $PATH
 
-      - run: docker-compose build && docker-compose up
+      - run: 
+          shell: /bin/bash
+          command: |
+              docker-compose build
+              docker-compose up
