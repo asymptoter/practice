@@ -25,9 +25,6 @@ jobs:
           name: Install curl
           command: apk update && apk add curl curl-dev bash
       
-      - setup_remote_docker:
-          docker_layer_cacheing: true
-
       - run:
           name: Install Docker Compose
           shell: /bin/bash
@@ -35,7 +32,15 @@ jobs:
             set -x
             curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
             chmod +x /usr/local/bin/docker-compose
-            echo 'export PATH=$PATH:/usr/local/bin/' >> $BASH_ENV
-            echo $PATH
-            docker-compose build
-            docker-compose up
+
+      - setup_remote_docker:
+          docker_layer_cacheing: true
+
+      - run:
+          name: Start container and verify it is working
+          shell: /bin/bash
+          command: |
+            set -x
+            docker-compose up -d
+            docker run --network container:contacts \
+              appropriate/curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8080/api/v1/ping
