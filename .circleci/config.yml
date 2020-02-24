@@ -6,7 +6,7 @@ jobs:
   build:
     docker:
       # specify the version
-      - image: golang:1.13-alpine
+      - image: circleci/golang:1.13.1-buster
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -21,26 +21,27 @@ jobs:
     steps:
       - checkout
 
-      - run:
-          name: Install curl
-          command: apk update && apk add curl curl-dev bash
-      
-      - run:
-          name: Install Docker Compose
-          shell: /bin/bash
-          command: |
-            set -x
-            curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-            chmod +x /usr/local/bin/docker-compose
+#      - run:
+#          name: Install something
+#          command: |
+#            sudo apt-get update
+#            sudo apt-get install git-all
+#            sudo apt-get install docker.io
+#            sudo apt-get install curl
+#        
+#      - run:
+#          name: Install Docker Compose
+#          shell: /bin/bash
+#          command: |
+#            set -x
+#            curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+#            chmod +x ~/docker-compose
+#            sudo mv ~/docker-compose /usr/local/bin/docker-compose
 
-      - setup_remote_docker:
-          docker_layer_cacheing: true
+      - setup_remote_docker
 
       - run:
           name: Start container and verify it is working
-          shell: /bin/bash
           command: |
             set -x
             docker-compose up -d
-            docker run --network container:contacts \
-              appropriate/curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8080/api/v1/ping
