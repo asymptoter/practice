@@ -35,11 +35,14 @@ services:
             - "./databases/mysql/data:/var/lib/mysql"
             - "./databases/mysql/init:/docker-entrypoint-initdb.d:ro"
         container_name: "mysql"
-    postgres:
+    postgresql:
         image: postgres
         restart: always
         environment:
             POSTGRES_PASSWORD: test
         ports:
             - 5432:5432
+        volumes:
+            - "./databases/postgresql/data:/var/lib/postgresql"
+            - "./databases/postgresql/init:/docker-entrypoint-initdb.d:ro"
         container_name: postgres

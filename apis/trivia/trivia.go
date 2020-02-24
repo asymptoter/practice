@@ -43,7 +43,7 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 	// List games created by creator
 	r.Handle("GET", "/games", h.getGames)
 	// Delete game created by creator
-	r.Handle("DELETE", "game", h.deleteGame)
+	r.Handle("DELETE", "/game", h.deleteGame)
 	// Answer a quiz in a game
 	r.Handle("POST", "/answer", h.answer)
 }
@@ -93,4 +93,6 @@ func (h *handler) getGame(c *gin.Context) {
 func (h *handler) getGames(c *gin.Context) {
 }
 func (h *handler) answer(c *gin.Context) {
+}
+func (h *handler) deleteGame(c *gin.Context) {
 }

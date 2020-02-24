@@ -47,7 +47,7 @@ func main() {
 	flag.Parse()
 	config.Init()
 
-	db := db.MustNewMySQL()
+	db := db.MustNew("mysql")
 	defer db.Close()
 
 	redisService := redis.NewService()

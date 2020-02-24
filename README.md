@@ -13,6 +13,6 @@ This project will implement following
 6. Replace mysql by postgresql
 >Urgent
 7. Setup CI
->Urgent
+>Done
 8. Implement trivia game apis
 >High Priority

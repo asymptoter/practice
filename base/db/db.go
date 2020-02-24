@@ -11,17 +11,25 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func MustNewMySQL() *sqlx.DB {
-	res, err := NewMySQL()
+func MustNew(dbType string) *sqlx.DB {
+	res, err := NewDB(dbType)
 	if err != nil {
-		panic("NewMySQL failed by " + err.Error())
+		panic("New" + dbType + " failed by " + err.Error())
 	}
 	return res
 }
 
-func NewMySQL() (*sqlx.DB, error) {
+func NewDB(dbType string) (*sqlx.DB, error) {
 	cfg := config.Value.MySQL
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
+	connectionString := ""
+	switch dbType {
+	case "mysql":
+		connectionString = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
+	case "postgresql":
+		connectionString = fmt.Sprintf("")
+	default:
+		panic("Must specify dbType")
+	}
 
 	var err error
 	var db *sqlx.DB
