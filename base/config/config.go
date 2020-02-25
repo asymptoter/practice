@@ -25,10 +25,11 @@ type EmailConfiguration struct {
 	OfficialPassword string `yaml:"officialPassword"`
 }
 
-type MysqlConfiguration struct {
+type DatabaseConfiguration struct {
 	Address         string `yaml:"address"`
+	Port            int    `yaml:"port"`
 	DatabaseName    string `yaml:"databaseName"`
-	Username        string `yaml:"username"`
+	UserName        string `yaml:"userName"`
 	Password        string `yaml:"password"`
 	ConnectionRetry int    `yaml:"connectionRetry"`
 }
@@ -38,9 +39,9 @@ type RedisConfiguration struct {
 }
 
 type Configuration struct {
-	Server ServerConfiguration `yaml:"server"`
-	MySQL  MysqlConfiguration  `yaml:"mysql"`
-	Redis  RedisConfiguration  `yaml:"redis"`
+	Server   ServerConfiguration   `yaml:"server"`
+	Database DatabaseConfiguration `yaml:"database"`
+	Redis    RedisConfiguration    `yaml:"redis"`
 }
 
 func Init() {

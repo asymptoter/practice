@@ -47,7 +47,7 @@ func main() {
 	flag.Parse()
 	config.Init()
 
-	db := db.MustNew("mysql")
+	db := db.MustNew("postgres")
 	defer db.Close()
 
 	redisService := redis.NewService()

@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func MustNew(dbType string) *sqlx.DB {
@@ -20,13 +21,13 @@ func MustNew(dbType string) *sqlx.DB {
 }
 
 func NewDB(dbType string) (*sqlx.DB, error) {
-	cfg := config.Value.MySQL
+	cfg := config.Value.Database
 	connectionString := ""
 	switch dbType {
 	case "mysql":
-		connectionString = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.Username, cfg.Password, cfg.Address, cfg.DatabaseName)
-	case "postgresql":
-		connectionString = fmt.Sprintf("")
+		connectionString = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.UserName, cfg.Password, cfg.Address, cfg.DatabaseName)
+	case "postgres":
+		connectionString = fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable", cfg.UserName, cfg.Password, cfg.Address, cfg.Port, cfg.DatabaseName)
 	default:
 		panic("Must specify dbType")
 	}
@@ -39,7 +40,7 @@ func NewDB(dbType string) (*sqlx.DB, error) {
 	fmt.Println("retry:", cfg.ConnectionRetry)
 	// Connect to MySQL
 	for connectionCount < cfg.ConnectionRetry {
-		db, err = sqlx.Connect("mysql", connectionString)
+		db, err = sqlx.Connect(dbType, connectionString)
 		if db != nil && err == nil {
 			break
 		}
