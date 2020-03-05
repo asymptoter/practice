@@ -51,7 +51,7 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 type CreateQuizRequest struct {
 	Content   string
 	Options   []string
-	Answer    int
+	Answer    string
 	CountDown int
 }
 
@@ -70,7 +70,7 @@ func (h *handler) createQuiz(c *gin.Context) {
 		return
 	}
 
-	if err := h.trivia.CreateQuiz(context, user.ID, req.Content, req.Options, req.Answer); err != nil {
+	if err := h.trivia.CreateQuiz(context, user.ID, req.Content, req.Answer, req.Options); err != nil {
 		context.WithFields(logrus.Fields{
 			"params": req,
 			"userID": user.ID,

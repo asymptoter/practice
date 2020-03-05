@@ -11,39 +11,48 @@ import (
 )
 
 type Store interface {
-	CreateQuiz(context ctx.CTX, userID, content string, options []string, answer int) error
+	CreateQuiz(context ctx.CTX, userID, content, answer string, options []string) error
 	GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error)
 }
 
 type impl struct {
-	mysql *sqlx.DB
+	db    *sqlx.DB
 	redis redis.Service
 }
 
 func NewStore(db *sqlx.DB, redisService redis.Service) Store {
 	return &impl{
-		mysql: db,
+		db:    db,
 		redis: redisService,
 	}
 }
 
-func (s *impl) CreateQuiz(context ctx.CTX, userID, content string, options []string, answer int) error {
+func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, options []string) error {
 	// Check input
 	if len(options) < 2 {
 		return errors.New("number of options should be greater than 1")
 	}
-	if answer < 0 || answer >= len(options) {
-		return errors.New("invalid answer")
+	flag := true
+	for _, v := range options {
+		if v == answer {
+			flag = false
+			break
+		}
+	}
+	if flag {
+		return errors.New("answer should be included in options")
 	}
 
 	// Write db
-	if _, err := s.mysql.Exec("INSERT INTO quizzes (content, option1, option2, option3, option4, answer, creator) VALUES(?, ?, ?, ?, ?, ?, ?)", content, options[0], options[1], options[2], options[3], answer, userID); err != nil {
-		context.WithField("err", err).Error("CreateQuiz failed at mysql.Exec")
+	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, options, answer, creator) VALUES(?, ?, ?, ?)", content, options, answer, userID); err != nil {
+		context.WithField("err", err).Error("CreateQuiz failed at db.Exec")
 		return err
 	}
 	return nil
 }
 
 func (s *impl) GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error) {
-	return []*models.Quiz{}, nil
+	res := []*models.Quiz{}
+	//s.db.SelectContext(context, &res, "SELECT (content, options, answer")
+	return res, nil
 }

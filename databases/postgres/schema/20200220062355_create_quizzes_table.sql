@@ -1,17 +1,17 @@
 -- +goose Up
 -- SQL in this section is executed when the migration is applied.
-CREATE TABLE IF NOT EXISTS `quizzes` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `content` VARCHAR(512),
-    `option1` CHAR(32),
-    `option2` CHAR(32),
-    `option3` CHAR(32),
-    `option4` CHAR(32),
-    `answer` INT(1),
-    `creator` CHAR(36),
-    PRIMARY KEY (`id`),
-    KEY `creator` (`creator`),
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE SEQUENCE quizzes_id_seq;
+CREATE TABLE IF NOT EXISTS quizzes (
+    id INT NOT NULL DEFAULT nextval('quizzes_id_seq'),
+    content VARCHAR(512),
+    options CHAR(32) ARRAY,
+    answer CHAR(32),
+    creator UUID,
+    category CHAR(32),
+    PRIMARY KEY (id)
+);
+CREATE INDEX ON quizzes (creator, category);
+ALTER SEQUENCE quizzes_id_seq OWNED BY quizzes.id;
 -- +goose Down
 -- SQL in this section is executed when the migration is rolled back.
 DROP TABLE IF EXISTS quizzes;
