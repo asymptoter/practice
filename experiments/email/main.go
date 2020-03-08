@@ -3,11 +3,16 @@ package main
 import (
 	"log"
 	"net/smtp"
+
+	"github.com/asymptoter/practice-backend/base/config"
+)
+
+var (
+	from = config.Value.Server.Email.Account
+	pass = config.Value.Server.Email.Password
 )
 
 func main() {
-	from := "k4kugybv@gmail.com"
-	pass := "Pxb43gEq"
 	to := "asymptotion@gmail.com"
 	msg := "test"
 	auth := smtp.PlainAuth("", from, pass, "smtp.gmail.com")

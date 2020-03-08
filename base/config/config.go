@@ -14,15 +14,24 @@ var (
 )
 
 type ServerConfiguration struct {
-	Address string             `yaml:"address"`
-	Email   EmailConfiguration `yaml:"email"`
+	Address string                     `yaml:"address"`
+	Email   OfficialEmailConfiguration `yaml:"email"`
+	Testing TestingConfiguration       `yaml:"testing"`
+}
+
+type OfficialEmailConfiguration struct {
+	EmailConfiguration
+	SmtpHost string `yaml:"smtpHost"`
+	Port     int    `yaml:"port"`
+}
+
+type TestingConfiguration struct {
+	Email EmailConfiguration `yaml:"email"`
 }
 
 type EmailConfiguration struct {
-	Address          string `yaml:"address"`
-	Port             int    `yaml:"port"`
-	OfficialAccount  string `yaml:"officialAccount"`
-	OfficialPassword string `yaml:"officialPassword"`
+	Account  string `yaml:"account"`
+	Password string `yaml:"password"`
 }
 
 type DatabaseConfiguration struct {

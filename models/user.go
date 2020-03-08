@@ -1,9 +1,9 @@
 package models
 
 type User struct {
-	ID               string `json:"ID" gorm:"id"`
-	Email            string `json:"email" gorm:"email"`
-	Password         string `json:"password" gorm:"password"`
-	Token            string `json:"token" gorm:'token'`
-	ActivationNumber int    `json:"activationNumber" gorm:"activation_number"`
+	ID           string `json:"ID" db:"id"`
+	Email        string `json:"Email" db:"email"`
+	Password     string `json:"Password" db:"password"`
+	Token        string `json:"Token" db:"token"`
+	RegisterDate int64  `json:"RegisterDate" db:"register_date"`
 }

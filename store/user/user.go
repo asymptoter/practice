@@ -15,13 +15,13 @@ type Store interface {
 }
 
 type impl struct {
-	mysql *sqlx.DB
+	sql   *sqlx.DB
 	redis redis.Service
 }
 
 func NewStore(db *sqlx.DB, redis redis.Service) Store {
 	return &impl{
-		mysql: db,
+		sql:   db,
 		redis: redis,
 	}
 }
@@ -30,8 +30,8 @@ func (u *impl) GetByToken(context ctx.CTX, token string) (*models.User, error) {
 	user := &models.User{}
 	val, err := u.redis.Get(context, token)
 	if err != nil {
-		if err := u.mysql.Get(user, "SELECT email, id, activation_number from users where token = ?", token); err != nil {
-			context.WithField("err", err).Error("GetByToken failed at mysql.Get")
+		if err := u.sql.Get(user, "SELECT email, id, activation_number from users where token = ?", token); err != nil {
+			context.WithField("err", err).Error("GetByToken failed at sql.Get")
 			return nil, err
 		}
 

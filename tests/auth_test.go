@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/asymptoter/practice-backend/apis/auth"
-	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -23,9 +22,10 @@ func (s *AuthTestSuite) TearDownTest() {
 }
 
 func (s *AuthTestSuite) TestSignup() {
+	cfg := config.Server.Testing
 	body, _ := json.Marshal(auth.SignupRequest{
-		Email:    "test" + uuid.New().String(),
-		Password: "test",
+		Email:    cfg.Email.Account,
+		Password: cfg.Email.Password,
 	})
 
 	resp, err := http.Post("http://127.0.0.1:8080/api/v1/auth/signup", "application/json", bytes.NewBuffer(body))

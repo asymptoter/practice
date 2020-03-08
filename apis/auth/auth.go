@@ -21,14 +21,14 @@ import (
 )
 
 type handler struct {
-	mysql *sqlx.DB
+	sql   *sqlx.DB
 	redis redis.Service
 	user  user.Store
 }
 
 func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, us user.Store) {
 	h := handler{
-		mysql: db,
+		sql:   db,
 		redis: redisService,
 		user:  us,
 	}
@@ -78,14 +78,14 @@ func (h *handler) signup(c *gin.Context) {
 		Token:    token,
 	}
 
-	if _, err := h.mysql.Exec("INSERT INTO users (id, email, password, token, activation_number) VALUES (?, ?, ?, ?, ?)", user.ID, user.Email, user.Password, user.Token, 0); err != nil {
+	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES (?, ?, ?, ?, ?)", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	activeAccountKey := "auth:active:" + userID
-	if err := h.redis.Set(context, activeAccountKey, activeToken, 24*time.Hour); err != nil {
+	activeAccountKey := "auth:active:activeToken:" + activeToken
+	if err := h.redis.Set(context, activeAccountKey, token, 24*time.Hour); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": userID,
@@ -99,14 +99,13 @@ func (h *handler) signup(c *gin.Context) {
 	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='" + query + "'>Here</a></p><p>Regards Site Admin</p>"
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
-		context.WithField("err", err).Error("sendEmail failed")
+		context.WithField("err", err).Error("email.Send failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, SignupResponse{
 		UserID: userID,
-		Token:  token,
 	})
 }
 
@@ -115,8 +114,8 @@ func (h *handler) activation(c *gin.Context) {
 	activeToken := c.Query("activeToken")
 	context := ctx.Background()
 
-	activeAccountKey := "auth:active:" + userID
-	val, err := h.redis.Get(context, activeAccountKey)
+	activeAccountKey := "auth:active:activeToken:" + activeToken
+	token, err := h.redis.Get(context, activeAccountKey)
 	if err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
@@ -126,13 +125,8 @@ func (h *handler) activation(c *gin.Context) {
 		return
 	}
 
-	if string(val) != activeToken {
-		c.JSON(http.StatusBadRequest, "Invalid token")
-		return
-	}
-
-	if _, err := h.mysql.Exec("UPDATE users SET activation_number=? WHERE id=?", 1, userID); err != nil {
-		context.WithField("err", err).Error("mysql.Update failed")
+	if _, err := h.sql.Exec("UPDATE users SET token=? WHERE id=?", string(token), userID); err != nil {
+		context.WithField("err", err).Error("sql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -166,7 +160,7 @@ func (h *handler) login(c *gin.Context) {
 	}
 
 	user := models.User{}
-	if err := h.mysql.Get(&user, "SELECT password FROM users where email = ?", user.Email); err != nil {
+	if err := h.sql.Get(&user, "SELECT password FROM users where email = ?", user.Email); err != nil {
 		context.WithField("err", err).Error("Where failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -176,12 +170,6 @@ func (h *handler) login(c *gin.Context) {
 	if string(hashedPassword) != user.Password {
 		context.Error("Invalid email or password")
 		c.JSON(http.StatusUnauthorized, errors.New("Invalid email or password"))
-		return
-	}
-
-	if user.ActivationNumber < 1 {
-		context.Error("Inactivated account")
-		c.JSON(http.StatusUnauthorized, errors.New("Inactivated account"))
 		return
 	}
 
