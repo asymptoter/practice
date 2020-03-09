@@ -20,7 +20,7 @@ type AuthTestSuite struct {
 }
 
 func (s *AuthTestSuite) SetupTest() {
-	config.Init()
+	config.Init(". ")
 	s.sql = db.MustNew("postgres", false)
 	_, err := s.sql.Exec("TRUNCATE users")
 	s.NoError(err)

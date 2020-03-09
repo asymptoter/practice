@@ -1,6 +1,6 @@
 FROM golang:latest AS builder
 ENV GO111MODULE on
-WORKDIR /Users/ayuang/go/src/github.com/asymptoter/practice-backend
+WORKDIR /go/src/github.com/asymptoter/practice-backend
 COPY go.mod .
 COPY go.sum .
 RUN go mod download

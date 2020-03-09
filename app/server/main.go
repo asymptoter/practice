@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"syscall"
 	"time"
@@ -45,7 +46,11 @@ func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 
 func main() {
 	flag.Parse()
-	config.Init()
+	pwd, err := exec.Command("pwd").Output()
+	if err != nil {
+		log.Fatal("exec.Command failed", err)
+	}
+	config.Init(string(pwd))
 
 	db := db.MustNew("postgres", true)
 	defer db.Close()

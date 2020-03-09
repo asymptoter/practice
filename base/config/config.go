@@ -9,6 +9,7 @@ import (
 
 var (
 	ENV            = flag.String("env", "local", "environment")
+	WORKDIR        = flag.String("workdir", ".", "working directory")
 	Configurations = map[string]Configuration{}
 	Value          = Configuration{}
 )
@@ -54,8 +55,8 @@ type Configuration struct {
 	Redis    RedisConfiguration    `yaml:"redis"`
 }
 
-func Init() {
-	file, err := ioutil.ReadFile("/Users/ayuang/go/src/github.com/asymptoter/practice-backend/config/config.yml")
+func Init(pwd string) {
+	file, err := ioutil.ReadFile(pwd[:len(pwd)-1] + "/../../config/config.yml")
 	if err != nil {
 		panic("ioutil.ReadFile failed " + err.Error())
 	}
@@ -65,11 +66,4 @@ func Init() {
 	}
 
 	Value = Configurations[*ENV]
-}
-
-func GetServerConfig() ServerConfiguration {
-	if len(Configurations) == 0 {
-		Init()
-	}
-	return Value.Server
 }

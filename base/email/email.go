@@ -21,15 +21,13 @@ var (
 	smtpPort         = 587
 )
 
-func init() {
-	cfg := config.GetServerConfig()
-	smtpHost = cfg.Email.SmtpHost
-	smtpPort = cfg.Email.Port
-	officialAccount = cfg.Email.Account
-	officialPassword = cfg.Email.Password
-}
-
 func Send(context ctx.CTX, email, message string) error {
+	cfg := config.Value.Server.Email
+	smtpHost = cfg.SmtpHost
+	smtpPort = cfg.Port
+	officialAccount = cfg.Account
+	officialPassword = cfg.Password
+
 	m := gomail.NewMessage()
 	m.SetHeader("From", officialAccount)
 	m.SetHeader("To", email)
