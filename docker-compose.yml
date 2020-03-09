@@ -11,7 +11,7 @@ services:
         ports:
             - "8080:8080"
         volumes:
-            - "/go/src/github.com/asymptoter/practice-backend:/go/src/github.com/asymptoter/practice-backend"
+            - "./app/server:/go/src/github.com/asymptoter/practice-backend/app/server"
         container_name: "server"
         restart: always
         command: ["../../scripts/wait-for-it.sh", "postgresql:5432", "--", "go", "run", "main.go"]
