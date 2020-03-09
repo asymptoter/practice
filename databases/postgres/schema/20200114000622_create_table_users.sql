@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     token UUID,
     email VARCHAR(320) UNIQUE NOT NULL,
     password CHAR(60) NOT NULL, 
-    register_date TIMESTAMP,
+    register_date BIGINT,
     PRIMARY KEY (id)
 );
 CREATE UNIQUE INDEX ON users (email);

@@ -7,6 +7,7 @@ import (
 
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/sirupsen/logrus"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -21,10 +22,11 @@ var (
 )
 
 func init() {
-	smtpHost = config.Value.Server.Email.SmtpHost
-	smtpPort = config.Value.Server.Email.Port
-	officialAccount = config.Value.Server.Email.Account
-	officialPassword = config.Value.Server.Email.Password
+	cfg := config.GetServerConfig()
+	smtpHost = cfg.Email.SmtpHost
+	smtpPort = cfg.Email.Port
+	officialAccount = cfg.Email.Account
+	officialPassword = cfg.Email.Password
 }
 
 func Send(context ctx.CTX, email, message string) error {
@@ -37,7 +39,12 @@ func Send(context ctx.CTX, email, message string) error {
 	d := gomail.NewDialer(smtpHost, smtpPort, officialAccount, officialPassword)
 	// TODO solve the secure issue
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-
+	context.WithFields(logrus.Fields{
+		"smtpHost":        smtpHost,
+		"smtpPort":        smtpPort,
+		"officialAccount": officialAccount,
+		"receiver":        email,
+	}).Info("Dial and send email")
 	return d.DialAndSend(m)
 }
 

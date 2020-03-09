@@ -78,7 +78,7 @@ func (h *handler) signup(c *gin.Context) {
 		Token:    token,
 	}
 
-	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES (?, ?, ?, ?, ?)", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
+	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES ($1, $2, $3, $4)", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -125,7 +125,7 @@ func (h *handler) activation(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.sql.Exec("UPDATE users SET token=? WHERE id=?", string(token), userID); err != nil {
+	if _, err := h.sql.Exec("UPDATE users SET token=? WHERE id=?;", string(token), userID); err != nil {
 		context.WithField("err", err).Error("sql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -160,7 +160,7 @@ func (h *handler) login(c *gin.Context) {
 	}
 
 	user := models.User{}
-	if err := h.sql.Get(&user, "SELECT password FROM users where email = ?", user.Email); err != nil {
+	if err := h.sql.Get(&user, "SELECT password FROM users where email = ?;", user.Email); err != nil {
 		context.WithField("err", err).Error("Where failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return

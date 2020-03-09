@@ -12,22 +12,26 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func MustNew(dbType string) *sqlx.DB {
-	res, err := NewDB(dbType)
+func MustNew(dbType string, isContainer bool) *sqlx.DB {
+	res, err := NewDB(dbType, isContainer)
 	if err != nil {
 		panic("New" + dbType + " failed by " + err.Error())
 	}
 	return res
 }
 
-func NewDB(dbType string) (*sqlx.DB, error) {
+func NewDB(dbType string, isContainer bool) (*sqlx.DB, error) {
 	cfg := config.Value.Database
 	connectionString := ""
+	address := cfg.Address
+	if isContainer {
+		address = "docker.for.mac." + address
+	}
 	switch dbType {
 	case "mysql":
-		connectionString = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.UserName, cfg.Password, cfg.Address, cfg.DatabaseName)
+		connectionString = fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&multiStatements=true", cfg.UserName, cfg.Password, address, cfg.DatabaseName)
 	case "postgres":
-		connectionString = fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable", cfg.UserName, cfg.Password, cfg.Address, cfg.Port, cfg.DatabaseName)
+		connectionString = fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable", cfg.UserName, cfg.Password, address, cfg.Port, cfg.DatabaseName)
 	default:
 		panic("Must specify dbType")
 	}

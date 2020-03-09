@@ -20,9 +20,10 @@ type ServerConfiguration struct {
 }
 
 type OfficialEmailConfiguration struct {
-	EmailConfiguration
 	SmtpHost string `yaml:"smtpHost"`
 	Port     int    `yaml:"port"`
+	Account  string `yaml:"account"`
+	Password string `yaml:"password"`
 }
 
 type TestingConfiguration struct {
@@ -54,7 +55,7 @@ type Configuration struct {
 }
 
 func Init() {
-	file, err := ioutil.ReadFile("../../config/config.yml")
+	file, err := ioutil.ReadFile("/Users/ayuang/go/src/github.com/asymptoter/practice-backend/config/config.yml")
 	if err != nil {
 		panic("ioutil.ReadFile failed " + err.Error())
 	}
@@ -64,4 +65,11 @@ func Init() {
 	}
 
 	Value = Configurations[*ENV]
+}
+
+func GetServerConfig() ServerConfiguration {
+	if len(Configurations) == 0 {
+		Init()
+	}
+	return Value.Server
 }

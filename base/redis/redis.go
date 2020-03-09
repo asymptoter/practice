@@ -5,6 +5,7 @@ import (
 
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -48,7 +49,15 @@ func (r *impl) Get(context ctx.CTX, key string) ([]byte, error) {
 
 func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
 	conn := r.redis.Get()
-	_, err := conn.Do("SET", key, value, expiration)
+	_, err := conn.Do("SET", key, value, "EX", int64(expiration))
 	defer Close(context, "Set", conn)
+	if err != nil {
+		context.WithFields(logrus.Fields{
+			"err":        err,
+			"key":        key,
+			"value":      value,
+			"expiration": expiration,
+		}).Error("Set failed at conn.Do")
+	}
 	return err
 }
