@@ -7,7 +7,7 @@ jobs:
     docker:
       - image: circleci/golang:1.13.1-buster
 
-    working_directory: /Users/ayuang/go/src/github.com/asymptoter/practice-backend
+    working_directory: /go/src/github.com/asymptoter/practice-backend
     steps:
       - checkout
 
