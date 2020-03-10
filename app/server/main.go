@@ -22,6 +22,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/robfig/cron/v3"
 )
 
 func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
@@ -50,7 +51,15 @@ func main() {
 	if err != nil {
 		log.Fatal("exec.Command failed", err)
 	}
+
 	config.Init(string(pwd))
+	cronJob := cron.New(cron.WithSeconds())
+	cronJob.AddFunc("*/30 * * * * *", func() {
+		config.Init(string(pwd))
+	})
+	go func() {
+		cronJob.Start()
+	}()
 
 	db := db.MustNew("postgres", true)
 	defer db.Close()

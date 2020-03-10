@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -96,7 +97,7 @@ func (h *handler) signup(c *gin.Context) {
 
 	cfg := config.Value.Server
 	query := "http://" + cfg.Address + "/api/v1/auth/activation?id" + userID + "&activeToken=" + activeToken
-	activeMessage := "<p>Thank you for registering at demo site.</p><p>To activate your account, please click on this link: <a href='" + query + "'>Here</a></p><p>Regards Site Admin</p>"
+	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, query)
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
 		context.WithField("err", err).Error("email.Send failed")

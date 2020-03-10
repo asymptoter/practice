@@ -1,9 +1,11 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"io/ioutil"
 
+	"github.com/asymptoter/practice-backend/base/ctx"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,10 +23,11 @@ type ServerConfiguration struct {
 }
 
 type OfficialEmailConfiguration struct {
-	SmtpHost string `yaml:"smtpHost"`
-	Port     int    `yaml:"port"`
-	Account  string `yaml:"account"`
-	Password string `yaml:"password"`
+	SmtpHost          string `yaml:"smtpHost"`
+	Port              int    `yaml:"port"`
+	Account           string `yaml:"account"`
+	Password          string `yaml:"password"`
+	ActivationMessage string `yaml:"activationMessage"`
 }
 
 type TestingConfiguration struct {
@@ -56,14 +59,22 @@ type Configuration struct {
 }
 
 func Init(pwd string) {
+	context := ctx.Background()
 	file, err := ioutil.ReadFile(pwd[:len(pwd)-1] + "/../../config/config.yml")
 	if err != nil {
-		panic("ioutil.ReadFile failed " + err.Error())
+		panic("config.Init failed at ioutil.ReadFile " + err.Error())
 	}
 
 	if err := yaml.Unmarshal(file, Configurations); err != nil {
-		panic("yaml.Unmarshal failed " + err.Error())
+		panic("config.Init failed at yaml.Unmarshal " + err.Error())
 	}
 
-	Value = Configurations[*ENV]
+	temp := Configurations[*ENV]
+	b1, _ := json.Marshal(temp)
+	b2, _ := json.Marshal(Value)
+	if string(b1) == string(b2) {
+		return
+	}
+	Value = temp
+	context.Info("Configuration updated.")
 }
