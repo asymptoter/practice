@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/asymptoter/practice-backend/apis/auth"
@@ -29,27 +31,45 @@ func (s *AuthTestSuite) SetupTest() {
 }
 
 func (s *AuthTestSuite) TearDownTest() {
-	_, err := s.sql.Exec("TRUNCATE users")
-	s.NoError(err)
-	s.sql.Close()
 }
 
-func (s *AuthTestSuite) TestSignup() {
+func (s *AuthTestSuite) TestAuthFlow() {
+	context := ctx.Background()
 	cfg := config.Value.Server.Testing.Email
 	body, _ := json.Marshal(auth.SignupRequest{
 		Email:    cfg.Account,
 		Password: cfg.Password,
 	})
 
+	// Signup
 	resp, err := http.Post("http://127.0.0.1:8080/api/v1/auth/signup", "application/json", bytes.NewBuffer(body))
 	s.NoError(err)
 	s.NotNil(resp)
-	s.Equal(http.StatusOK, resp.StatusCode)
+	s.Equal(http.StatusOK, resp.StatusCode, "Signup")
 
-	context := ctx.Background()
 	msg, err := email.Receive(context, cfg.Account, cfg.Password)
 	s.NoError(err)
+
+	msg = strings.Replace(msg, "=3D", "=", -1)
+	msg = strings.Replace(msg, "=\r\n", "", -1)
 	context.Info(msg)
+
+	r, _ := regexp.Compile("http.*(H){1}")
+	m := string(r.Find([]byte(msg)))
+	url := m[:len(m)-2]
+
+	// Active account
+	resp, err = http.Get(url)
+	s.NoError(err)
+	s.NotNil(resp)
+	s.Equal(http.StatusOK, resp.StatusCode, "Active")
+	context.Info("Active OK")
+
+	// Login
+	resp, err = http.Post("http://127.0.0.1:8080/api/v1/auth/login", "application/json", bytes.NewBuffer(body))
+	s.NoError(err)
+	s.NotNil(resp)
+	s.Equal(http.StatusOK, resp.StatusCode, "Login")
 }
 
 func TestSuite(t *testing.T) {

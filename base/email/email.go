@@ -32,7 +32,7 @@ func Send(context ctx.CTX, email, message string) error {
 	m.SetHeader("From", officialAccount)
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Active practice account")
-	m.SetBody("text/html", message)
+	m.SetBody("text/plain", message)
 
 	d := gomail.NewDialer(smtpHost, smtpPort, officialAccount, officialPassword)
 	// TODO solve the secure issue
@@ -75,7 +75,7 @@ func Receive(context ctx.CTX, account, password string) (string, error) {
 	seqset.AddRange(0, 0)
 
 	messages := make(chan *imap.Message, 1)
-	if err := c.Fetch(seqset, []imap.FetchItem{imap.FetchRFC822Text}, messages); err != nil {
+	if err := c.Fetch(seqset, []imap.FetchItem{imap.FetchRFC822}, messages); err != nil {
 		context.Fatal("Fetch failed")
 	}
 

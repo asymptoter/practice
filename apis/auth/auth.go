@@ -46,7 +46,6 @@ type SignupRequest struct {
 
 type SignupResponse struct {
 	UserID string `json:"userID"`
-	Token  string `json:"token"`
 }
 
 func (h *handler) signup(c *gin.Context) {
@@ -79,7 +78,7 @@ func (h *handler) signup(c *gin.Context) {
 		Token:    token,
 	}
 
-	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES ($1, $2, $3, $4)", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
+	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES ($1, $2, $3, $4);", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
 		context.WithField("err", err).Error("Create failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -96,8 +95,8 @@ func (h *handler) signup(c *gin.Context) {
 	}
 
 	cfg := config.Value.Server
-	query := "http://" + cfg.Address + "/api/v1/auth/activation?id" + userID + "&activeToken=" + activeToken
-	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, query)
+	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + userID + "&activeToken=" + activeToken
+	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, link)
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
 		context.WithField("err", err).Error("email.Send failed")
@@ -108,6 +107,10 @@ func (h *handler) signup(c *gin.Context) {
 	c.JSON(http.StatusOK, SignupResponse{
 		UserID: userID,
 	})
+}
+
+type ActivationResponse struct {
+	Token string `json:"token"`
 }
 
 func (h *handler) activation(c *gin.Context) {
@@ -126,13 +129,16 @@ func (h *handler) activation(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.sql.Exec("UPDATE users SET token=? WHERE id=?;", string(token), userID); err != nil {
+	if _, err := h.sql.Exec("UPDATE users SET token=$1 WHERE id=$2;", string(token), userID); err != nil {
 		context.WithField("err", err).Error("sql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
+	context.Info("sql.Exec done.")
 
-	c.JSON(http.StatusOK, nil)
+	c.JSON(http.StatusOK, ActivationResponse{
+		Token: string(token),
+	})
 }
 
 type loginRequest struct {
@@ -161,16 +167,22 @@ func (h *handler) login(c *gin.Context) {
 	}
 
 	user := models.User{}
-	if err := h.sql.Get(&user, "SELECT password FROM users where email = ?;", user.Email); err != nil {
-		context.WithField("err", err).Error("Where failed")
+	if err := h.sql.Get(&user, "SELECT ID, email, password, token, register_date FROM users WHERE email = $1 LIMIT 1;", loginInfo.Email); err != nil {
+		context.WithField("err", err).Error("login failed at sql.Get")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 	context = ctx.WithValue(context, "userID", user.ID)
 
-	if string(hashedPassword) != user.Password {
-		context.Error("Invalid email or password")
+	if err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(loginInfo.Password)); err != nil {
+		context.WithField("err", err).Error("Invalid email or password")
 		c.JSON(http.StatusUnauthorized, errors.New("Invalid email or password"))
+		return
+	}
+
+	if len(user.Token) == 0 {
+		context.Error("Account is not activated")
+		c.JSON(http.StatusBadRequest, errors.New("Account is not activated"))
 		return
 	}
 
@@ -188,5 +200,6 @@ func (h *handler) login(c *gin.Context) {
 		return
 	}
 
+	user.Password = ""
 	c.JSON(http.StatusOK, user)
 }
