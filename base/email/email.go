@@ -32,7 +32,7 @@ func Send(context ctx.CTX, email, message string) error {
 	m.SetHeader("From", officialAccount)
 	m.SetHeader("To", email)
 	m.SetHeader("Subject", "Active practice account")
-	m.SetBody("text/plain", message)
+	m.SetBody("text/html", message)
 
 	d := gomail.NewDialer(smtpHost, smtpPort, officialAccount, officialPassword)
 	// TODO solve the secure issue

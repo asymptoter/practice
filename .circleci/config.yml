@@ -19,3 +19,8 @@ jobs:
             set -x
             docker-compose build
             docker-compose up -d
+      - run:
+          name: Integration test
+          command: |
+            cd tests/auth
+            go test
