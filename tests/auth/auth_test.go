@@ -57,7 +57,7 @@ func (s *AuthTestSuite) TestAuthFlow() {
 	r, _ := regexp.Compile("http.*(H){1}")
 	m := string(r.Find([]byte(msg)))
 	url := m[:len(m)-2]
-
+	context.Info("Active url:", url)
 	// Active account
 	resp, err = http.Get(url)
 	s.NoError(err)

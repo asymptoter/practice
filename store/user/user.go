@@ -7,10 +7,14 @@ import (
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/redis"
 	"github.com/asymptoter/practice-backend/models"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Store interface {
+	Create(context ctx.CTX, user *models.User) error
 	GetByToken(context ctx.CTX, token string) (*models.User, error)
 }
 
@@ -26,11 +30,31 @@ func NewStore(db *sqlx.DB, redis redis.Service) Store {
 	}
 }
 
+func (u *impl) Create(context ctx.CTX, user *models.User) error {
+	user.ID = uuid.New().String()
+	user.Token = uuid.New().String()
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		context.WithField("err", err).Error("Create failed at bcrypt.GenerateFromPassword")
+		return err
+	}
+
+	if _, err := u.sql.Exec("INSERT INTO users (id, token, email, password, register_date) VALUES ($1, $2, $3, $4, $5)", user.ID, user.Token, user.Email, hashedPassword, time.Now().Unix()); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":  err,
+			"user": user,
+		}).Error("Create failed at sql.Exec")
+		return err
+	}
+	return nil
+}
+
 func (u *impl) GetByToken(context ctx.CTX, token string) (*models.User, error) {
 	user := &models.User{}
 	val, err := u.redis.Get(context, token)
 	if err != nil {
-		if err := u.sql.Get(user, "SELECT email, id, activation_number from users where token = ?", token); err != nil {
+		if err := u.sql.Get(user, "SELECT email, id FROM users WHERE token = $1", token); err != nil {
 			context.WithField("err", err).Error("GetByToken failed at sql.Get")
 			return nil, err
 		}

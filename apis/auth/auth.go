@@ -24,14 +24,14 @@ import (
 type handler struct {
 	sql   *sqlx.DB
 	redis redis.Service
-	user  user.Store
+	us    user.Store
 }
 
 func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, us user.Store) {
 	h := handler{
 		sql:   db,
 		redis: redisService,
-		user:  us,
+		us:    us,
 	}
 
 	r.Handle("POST", "/signup", h.signup)
@@ -60,42 +60,33 @@ func (h *handler) signup(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(signupInfo.Password), bcrypt.DefaultCost)
-	if err != nil {
-		context.WithField("err", err).Error("bcrypt.GenerateFromPassword failed")
-		c.JSON(http.StatusInternalServerError, err)
-		return
-	}
-
-	token := uuid.New().String()
-	userID := uuid.New().String()
-	activeToken := uuid.New().String()
-
-	user := models.User{
-		ID:       userID,
+	user := &models.User{
 		Email:    signupInfo.Email,
-		Password: string(hashedPassword),
-		Token:    token,
+		Password: signupInfo.Password,
 	}
 
-	if _, err := h.sql.Exec("INSERT INTO users (id, email, password, register_date) VALUES ($1, $2, $3, $4);", user.ID, user.Email, user.Password, time.Now().Unix()); err != nil {
-		context.WithField("err", err).Error("Create failed")
+	if err := h.us.Create(context, user); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":   err,
+			"email": user.Email,
+		}).Error("signup failed at us.Create")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
+	activeToken := uuid.New().String()
 	activeAccountKey := "auth:active:activeToken:" + activeToken
-	if err := h.redis.Set(context, activeAccountKey, token, 24*time.Hour); err != nil {
+	if err := h.redis.Set(context, activeAccountKey, user.Token, 24*time.Hour); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
-			"userID": userID,
+			"userID": user.ID,
 		}).Error("redis.Set failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	cfg := config.Value.Server
-	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + userID + "&activeToken=" + activeToken
+	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + user.ID + "&activeToken=" + activeToken
 	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, link)
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
@@ -105,7 +96,7 @@ func (h *handler) signup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SignupResponse{
-		UserID: userID,
+		UserID: user.ID,
 	})
 }
 
