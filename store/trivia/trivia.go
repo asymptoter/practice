@@ -6,6 +6,7 @@ import (
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/redis"
 	"github.com/asymptoter/practice-backend/models"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -44,8 +45,12 @@ func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, optio
 	}
 
 	// Write db
-	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, options, answer, creator) VALUES(?, ?, ?, ?)", content, options, answer, userID); err != nil {
-		context.WithField("err", err).Error("CreateQuiz failed at db.Exec")
+	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, options, answer, creator) VALUES($1, $2, $3, $4)", content, options, answer, userID); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":    err,
+			"conent": content,
+			"userID": userID,
+		}).Error("CreateQuiz failed at db.ExecContext")
 		return err
 	}
 	return nil
@@ -53,6 +58,13 @@ func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, optio
 
 func (s *impl) GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error) {
 	res := []*models.Quiz{}
-	//s.db.SelectContext(context, &res, "SELECT (content, options, answer")
+	if err := s.db.SelectContext(context, &res, "SELECT id, content, image_url, options, answer FROM quizzes WHERE creator = $1 AND content LIKE '%$2%';", userID, content); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":    err,
+			"conent": content,
+			"userID": userID,
+		}).Error("GetQuizzes failed at db.SelectContext")
+		return nil, err
+	}
 	return res, nil
 }
