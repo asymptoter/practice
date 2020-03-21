@@ -1,13 +1,14 @@
 package redis
 
 import (
+	"errors"
 	"time"
 
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
-	"github.com/sirupsen/logrus"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/sirupsen/logrus"
 )
 
 type Service interface {
@@ -41,16 +42,33 @@ func Close(context ctx.CTX, functionName string, conn redis.Conn) {
 }
 
 func (r *impl) Get(context ctx.CTX, key string) ([]byte, error) {
+	if len(key) == 0 {
+		return nil, errors.New("empty key")
+	}
 	conn := r.redis.Get()
-	val, err := conn.Do("GET", key)
 	defer Close(context, "Get", conn)
-	return val.([]byte), err
+
+	val, err := conn.Do("GET", key)
+	if err != nil {
+		context.WithFields(logrus.Fields{
+			"err": err,
+			"key": key,
+		}).Error("Get failed at conn.Do")
+		return nil, err
+	}
+
+	res, ok := val.([]byte)
+	if !ok {
+		return nil, errors.New("type assertion failed")
+	}
+	return res, nil
 }
 
 func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
 	conn := r.redis.Get()
-	_, err := conn.Do("SET", key, value, "EX", int64(expiration))
 	defer Close(context, "Set", conn)
+
+	_, err := conn.Do("SET", key, value, "EX", int64(expiration))
 	if err != nil {
 		context.WithFields(logrus.Fields{
 			"err":        err,
@@ -58,6 +76,8 @@ func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration ti
 			"value":      value,
 			"expiration": expiration,
 		}).Error("Set failed at conn.Do")
+		return err
 	}
-	return err
+
+	return nil
 }

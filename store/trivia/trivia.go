@@ -6,14 +6,16 @@ import (
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/redis"
 	"github.com/asymptoter/practice-backend/models"
-	"github.com/sirupsen/logrus"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 )
 
 type Store interface {
-	CreateQuiz(context ctx.CTX, userID, content, answer string, options []string) error
-	GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error)
+	CreateQuiz(context ctx.CTX, userID uuid.UUID, content, answer string, options []string) error
+	GetQuizzes(context ctx.CTX, userID uuid.UUID, content string) ([]*models.Quiz, error)
 }
 
 type impl struct {
@@ -28,7 +30,7 @@ func NewStore(db *sqlx.DB, redisService redis.Service) Store {
 	}
 }
 
-func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, options []string) error {
+func (s *impl) CreateQuiz(context ctx.CTX, userID uuid.UUID, content, answer string, options []string) error {
 	// Check input
 	if len(options) < 2 {
 		return errors.New("number of options should be greater than 1")
@@ -45,7 +47,7 @@ func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, optio
 	}
 
 	// Write db
-	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, options, answer, creator) VALUES($1, $2, $3, $4)", content, options, answer, userID); err != nil {
+	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, options, answer, creator) VALUES($1, $2, $3, $4)", content, pq.Array(options), answer, userID); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"conent": content,
@@ -56,7 +58,7 @@ func (s *impl) CreateQuiz(context ctx.CTX, userID, content, answer string, optio
 	return nil
 }
 
-func (s *impl) GetQuizzes(context ctx.CTX, userID, content string) ([]*models.Quiz, error) {
+func (s *impl) GetQuizzes(context ctx.CTX, userID uuid.UUID, content string) ([]*models.Quiz, error) {
 	res := []*models.Quiz{}
 	if err := s.db.SelectContext(context, &res, "SELECT id, content, image_url, options, answer FROM quizzes WHERE creator = $1 AND content LIKE '%$2%';", userID, content); err != nil {
 		context.WithFields(logrus.Fields{

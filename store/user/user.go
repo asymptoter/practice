@@ -7,6 +7,7 @@ import (
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/redis"
 	"github.com/asymptoter/practice-backend/models"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 
 type Store interface {
 	Create(context ctx.CTX, user *models.User) error
-	GetByToken(context ctx.CTX, token string) (*models.User, error)
+	GetByToken(context ctx.CTX, token uuid.UUID) (*models.User, error)
 }
 
 type impl struct {
@@ -31,8 +32,8 @@ func NewStore(db *sqlx.DB, redis redis.Service) Store {
 }
 
 func (u *impl) Create(context ctx.CTX, user *models.User) error {
-	user.ID = uuid.New().String()
-	user.Token = uuid.New().String()
+	user.ID = uuid.New()
+	user.Token = uuid.New()
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -50,9 +51,10 @@ func (u *impl) Create(context ctx.CTX, user *models.User) error {
 	return nil
 }
 
-func (u *impl) GetByToken(context ctx.CTX, token string) (*models.User, error) {
+func (u *impl) GetByToken(context ctx.CTX, token uuid.UUID) (*models.User, error) {
 	user := &models.User{}
-	val, err := u.redis.Get(context, token)
+	tokenString := token.String()
+	val, err := u.redis.Get(context, tokenString)
 	if err != nil {
 		if err := u.sql.Get(user, "SELECT email, id FROM users WHERE token = $1", token); err != nil {
 			context.WithField("err", err).Error("GetByToken failed at sql.Get")
@@ -61,7 +63,7 @@ func (u *impl) GetByToken(context ctx.CTX, token string) (*models.User, error) {
 
 		// Cache user in redis
 		b, _ := json.Marshal(user)
-		if err := u.redis.Set(context, token, b, 7*24*time.Hour); err != nil {
+		if err := u.redis.Set(context, tokenString, b, 7*24*time.Hour); err != nil {
 			context.WithField("err", err).Error("GetByToken failed at redis.Set")
 			// Fail but still acceptable result, so no return here
 		}

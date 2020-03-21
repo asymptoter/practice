@@ -45,7 +45,7 @@ type SignupRequest struct {
 }
 
 type SignupResponse struct {
-	UserID string `json:"userID"`
+	UserID uuid.UUID `json:"userID"`
 }
 
 func (h *handler) signup(c *gin.Context) {
@@ -86,7 +86,7 @@ func (h *handler) signup(c *gin.Context) {
 	}
 
 	cfg := config.Value.Server
-	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + user.ID + "&activeToken=" + activeToken
+	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + user.ID.String() + "&activeToken=" + activeToken
 	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, link)
 
 	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
@@ -177,7 +177,7 @@ func (h *handler) login(c *gin.Context) {
 		return
 	}
 
-	userInfoKey := "user:" + user.ID
+	userInfoKey := "user:" + user.ID.String()
 	b, err := json.Marshal(user)
 	if err != nil {
 		context.WithField("err", err).Error("json.Marshal failed")

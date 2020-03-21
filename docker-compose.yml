@@ -15,7 +15,7 @@ services:
             - "./config:/go/src/github.com/asymptoter/practice-backend/config"
         container_name: "server"
         restart: always
-        command: ["../../scripts/wait-for-it.sh", "postgresql:5432", "--", "go", "run", "main.go"]
+        #command: ["../../scripts/wait-for-it.sh", "postgresql:5432", "--", "go", "run", "main.go"]
     redis:
         image: "redis:alpine"
         ports:

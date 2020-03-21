@@ -1,9 +1,11 @@
 package models
 
+import "github.com/google/uuid"
+
 type User struct {
-	ID           string `json:"ID" db:"id"`
-	Email        string `json:"Email" db:"email"`
-	Password     string `db:"password"`
-	Token        string `json:"Token" db:"token"`
-	RegisterDate int64  `json:"RegisterDate" db:"register_date"`
+	ID           uuid.UUID `json:"ID" db:"id"`
+	Token        uuid.UUID `json:"Token" db:"token"`
+	Email        string    `json:"Email" db:"email"`
+	Password     string    `db:"password"`
+	RegisterDate int64     `json:"RegisterDate" db:"register_date"`
 }
