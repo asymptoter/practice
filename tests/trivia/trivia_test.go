@@ -3,11 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
-	"github.com/asymptoter/practice-backend/apis/trivia"
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/db"
@@ -36,6 +35,8 @@ func (s *TriviaTestSuite) SetupTest() {
 	s.NoError(err)
 	_, err = s.sql.Exec("TRUNCATE quizzes")
 	s.NoError(err)
+	_, err = s.sql.Exec("ALTER SEQUENCE quizzes_id_seq RESTART WITH 1")
+	s.NoError(err)
 
 	s.redis = redis.NewService()
 	s.user = user.NewStore(s.sql, s.redis)
@@ -56,21 +57,40 @@ func (s *TriviaTestSuite) TestTriviaFlow() {
 	s.Require().NoError(s.user.Create(context, u))
 
 	// Create quiz
-	bodyByte, _ := json.Marshal(trivia.CreateQuizRequest{
-		Content:   "content",
-		Options:   []string{"option1", "option2", "option3", "option4"},
-		Answer:    "option4",
-		CountDown: 10,
-	})
+	quiz := models.Quiz{
+		Content:  "content",
+		Options:  []string{"option1", "option2", "option3", "option4"},
+		Answer:   "option4",
+		Category: "",
+	}
+	bodyByte, _ := json.Marshal(quiz)
 	body := bytes.NewBuffer(bodyByte)
 	req, err := http.NewRequest("POST", s.host+"/api/v1/trivia/quiz", body)
 	req.Header.Add("Content-Type", "application/json")
-	fmt.Println(u.Token.String())
 	req.Header.Add("token", u.Token.String())
 	c := &http.Client{}
 	res, err := c.Do(req)
 	s.NoError(err, err)
 	s.Equal(http.StatusOK, res.StatusCode)
+
+	// Get quizzes
+	body = bytes.NewBuffer([]byte{})
+	req, err = http.NewRequest("GET", s.host+"/api/v1/trivia/quizzes", body)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("token", u.Token.String())
+	c = &http.Client{}
+	res, err = c.Do(req)
+	s.NoError(err, err)
+	s.Equal(http.StatusOK, res.StatusCode)
+	b, err := ioutil.ReadAll(res.Body)
+	defer s.Require().NoError(res.Body.Close())
+	s.NoError(err)
+	quizzes := []*models.Quiz{}
+	s.Require().NoError(json.Unmarshal(b, &quizzes))
+	s.Len(quizzes, 1)
+	quiz.ID = 1
+	quiz.Creator = u.ID
+	s.Equal(quiz, *quizzes[0])
 }
 
 func TestSuite(t *testing.T) {

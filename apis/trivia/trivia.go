@@ -48,21 +48,13 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 	r.Handle("POST", "/answer", h.answer)
 }
 
-type CreateQuizRequest struct {
-	Content   string   `json:"Content"`
-	Options   []string `json:"Options"`
-	Answer    string   `json:"Answer"`
-	CountDown int      `json:"CountDown"`
-}
-
 func (h *handler) createQuiz(c *gin.Context) {
 	context := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
 
-	var req CreateQuizRequest
-	if err := c.ShouldBind(&req); err != nil {
+	quiz := &models.Quiz{}
+	if err := c.ShouldBind(quiz); err != nil {
 		context.WithFields(logrus.Fields{
-			"params": req,
 			"userID": user.ID,
 			"error":  err,
 		}).Error("createQuiz failed at ShouldBind ", err)
@@ -70,11 +62,12 @@ func (h *handler) createQuiz(c *gin.Context) {
 		return
 	}
 
-	if err := h.trivia.CreateQuiz(context, user.ID, req.Content, req.Answer, req.Options); err != nil {
+	quiz.Creator = user.ID
+	quiz.ImageURL = "" // TODO transfer image into url
+	if err := h.trivia.CreateQuiz(context, quiz); err != nil {
 		context.WithFields(logrus.Fields{
-			"params": req,
-			"userID": user.ID,
-			"error":  err,
+			"quiz":  quiz,
+			"error": err,
 		}).Error("createQuiz failed at trivia.CreateQuiz")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -83,28 +76,25 @@ func (h *handler) createQuiz(c *gin.Context) {
 }
 
 type GetQuizzesRequest struct {
-	Content string `json:"Content"`
+	Content  string `json:"content"`
+	Category string `json:"category"`
 }
 
 func (h *handler) getQuizzes(c *gin.Context) {
 	context := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
+	context = ctx.WithValue(context, "userID", user.ID)
 	var req GetQuizzesRequest
 	if err := c.ShouldBind(&req); err != nil {
-		context.WithFields(logrus.Fields{
-			"params": req,
-			"userID": user.ID,
-			"error":  err,
-		}).Error("getQuizzes failed at ShouldBind ", err)
+		context.WithField("error", err).Error("getQuizzes failed at ShouldBind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	res, err := h.trivia.GetQuizzes(context, user.ID, req.Content)
+	res, err := h.trivia.GetQuizzes(context, user.ID, req.Content, req.Category)
 	if err != nil {
 		context.WithFields(logrus.Fields{
 			"params": req,
-			"userID": user.ID,
 			"error":  err,
 		}).Error("createQuiz failed at trivia.CreateQuiz")
 		c.JSON(http.StatusInternalServerError, err)
@@ -112,6 +102,7 @@ func (h *handler) getQuizzes(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
 func (h *handler) deleteQuiz(c *gin.Context) {
 }
 func (h *handler) createGame(c *gin.Context) {
