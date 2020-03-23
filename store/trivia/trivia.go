@@ -16,6 +16,7 @@ import (
 type Store interface {
 	CreateQuiz(context ctx.CTX, quiz *models.Quiz) error
 	GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category string) ([]*models.Quiz, error)
+	CreateGame(context ctx.CTX, game *models.Game) error
 }
 
 type impl struct {
@@ -59,29 +60,16 @@ func (s *impl) CreateQuiz(context ctx.CTX, q *models.Quiz) error {
 }
 
 func (s *impl) GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category string) ([]*models.Quiz, error) {
-	rows := &sqlx.Rows{}
-	var err error
-
-	query := "SELECT id, content, image_url, options, answer, creator, category FROM quizzes WHERE creator = $1 AND content LIKE '%' || $2 || '%'"
-	if len(category) > 0 {
-		query = query + " AND category = $3"
-		rows, err = s.db.QueryxContext(context, query, userID, content, category)
-	} else {
-		rows, err = s.db.QueryxContext(context, query, userID, content)
-	}
-	if err != nil {
-		context.WithField("err", err).Error("GetQuizzes failed at db.QueryxContext")
+	res := []*models.Quiz{}
+	query := "SELECT id, content, image_url, options, answer, creator, category FROM quizzes WHERE creator = $1 AND content LIKE '%' || $2 || '%' AND category LIKE '%' || $3 || '%'"
+	if err := s.db.SelectContext(context, &res, query, userID, content, category); err != nil {
+		context.WithField("err", err).Error("GetQuizzes failed at db.SelectContext")
 		return nil, err
 	}
 
-	res := []*models.Quiz{}
-	for rows.Next() {
-		t := &models.Quiz{}
-		if err := rows.Scan(&t.ID, &t.Content, &t.ImageURL, (*pq.StringArray)(&t.Options), &t.Answer, &t.Creator, &t.Category); err != nil {
-			context.WithField("err", err).Error("GetQuizzes failed at rows.Scan")
-		}
-		res = append(res, t)
-	}
-
 	return res, nil
+}
+
+func (s *impl) CreateGame(context ctx.CTX, game *models.Game) error {
+	return nil
 }

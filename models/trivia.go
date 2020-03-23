@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type TriviaMode int
@@ -15,13 +16,13 @@ const (
 )
 
 type Quiz struct {
-	ID       int64     `json:"ID" db:"id"`
-	Content  string    `json:"content" db:"content"`
-	ImageURL string    `json:"imageURL" db:"image_url"`
-	Options  []string  `json:"options" db:"options"`
-	Answer   string    `json:"answer" db:"answer"`
-	Creator  uuid.UUID `json:"creator" db:"creator"`
-	Category string    `json:"category" db:"category"`
+	ID       int64          `json:"ID" db:"id"`
+	Content  string         `json:"content" db:"content"`
+	ImageURL string         `json:"imageURL" db:"image_url"`
+	Options  pq.StringArray `json:"options" db:"options"`
+	Answer   string         `json:"answer" db:"answer"`
+	Creator  uuid.UUID      `json:"creator" db:"creator"`
+	Category string         `json:"category" db:"category"`
 }
 
 type Game struct {
