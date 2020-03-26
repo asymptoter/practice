@@ -70,6 +70,16 @@ func (s *impl) GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category s
 	return res, nil
 }
 
-func (s *impl) CreateGame(context ctx.CTX, game *models.Game) error {
+func (s *impl) CreateGame(context ctx.CTX, g *models.Game) error {
+	// Write db
+	res, err := s.db.ExecContext(context, "INSERT INTO games (name, quiz_ids, mode, count_down, creator) SELECT $1, $2::int[], $3, $4, $5 WHERE NOT EXISTS ((SELECT * FROM unnest($2::int[])) EXCEPT (SELECT id FROM quizzes))", g.Name, pq.Array(g.QuizIDs), g.Mode, g.CountDown, g.Creator)
+	if err != nil {
+		context.WithFields(logrus.Fields{
+			"err":    err,
+			"userID": g.Creator,
+		}).Error("CreateGame failed at db.ExecContext")
+		return err
+	}
+	context.Info(res.RowsAffected())
 	return nil
 }

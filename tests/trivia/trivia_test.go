@@ -37,6 +37,10 @@ func (s *TriviaTestSuite) SetupTest() {
 	s.NoError(err)
 	_, err = s.sql.Exec("ALTER SEQUENCE quizzes_id_seq RESTART WITH 1")
 	s.NoError(err)
+	_, err = s.sql.Exec("TRUNCATE games")
+	s.NoError(err)
+	_, err = s.sql.Exec("ALTER SEQUENCE games_id_seq RESTART WITH 1")
+	s.NoError(err)
 
 	s.redis = redis.NewService()
 	s.user = user.NewStore(s.sql, s.redis)
@@ -71,7 +75,7 @@ func (s *TriviaTestSuite) TestTriviaFlow() {
 	c := &http.Client{}
 	res, err := c.Do(req)
 	s.NoError(err, err)
-	s.Equal(http.StatusOK, res.StatusCode)
+	s.Equal(http.StatusCreated, res.StatusCode)
 
 	// Get quizzes
 	body = bytes.NewBuffer([]byte{})
@@ -91,6 +95,24 @@ func (s *TriviaTestSuite) TestTriviaFlow() {
 	quiz.ID = 1
 	quiz.Creator = u.ID
 	s.Equal(quiz, *quizzes[0])
+
+	// Create game
+	game := models.Game{
+		Name:      "game1",
+		QuizIDs:   []int64{1},
+		Mode:      models.TriviaModePlayAll,
+		CountDown: 10,
+		Creator:   u.ID,
+	}
+	bodyByte, _ = json.Marshal(game)
+	body = bytes.NewBuffer(bodyByte)
+	req, err = http.NewRequest("POST", s.host+"/api/v1/trivia/game", body)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("token", u.Token.String())
+	c = &http.Client{}
+	res, err = c.Do(req)
+	s.NoError(err, err)
+	s.Equal(http.StatusCreated, res.StatusCode)
 }
 
 func TestSuite(t *testing.T) {

@@ -10,9 +10,9 @@ import (
 type TriviaMode int
 
 const (
-	PlayAll   TriviaMode = iota // Count correct quizzes
-	NoWrong                     // Wrong answer then game end
-	TimeCount                   // Count correct quizzes in time limit
+	TriviaModePlayAll   TriviaMode = iota // Count correct quizzes
+	TriviaModeNoWrong                     // Wrong answer then game end
+	TriviaModeTimeCount                   // Count correct quizzes in time limit
 )
 
 type Quiz struct {
@@ -27,8 +27,8 @@ type Quiz struct {
 
 type Game struct {
 	ID        int64      `json:"ID" db:"id"`
-	QuizIDs   []int64    `db:"quiz_ids"`  // Used in db
-	Quizzes   []Quiz     `json:"quizzes"` // Used in response
+	Name      string     `json:"name" db:"name"`
+	QuizIDs   []int64    `json:"quizIDs" db:"quiz_ids"`
 	Mode      TriviaMode `json:"mode" db:"mode"`
 	CountDown int        `json:"countDown" db:"count_down"`
 	Creator   uuid.UUID  `json:"creator" db:"creator"`

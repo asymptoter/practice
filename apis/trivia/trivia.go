@@ -72,7 +72,7 @@ func (h *handler) createQuiz(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, nil)
+	c.JSON(http.StatusCreated, nil)
 }
 
 type GetQuizzesRequest struct {
@@ -105,8 +105,33 @@ func (h *handler) getQuizzes(c *gin.Context) {
 
 func (h *handler) deleteQuiz(c *gin.Context) {
 }
+
 func (h *handler) createGame(c *gin.Context) {
+	context := ctx.Background()
+	user := c.MustGet("userInfo").(*models.User)
+
+	game := &models.Game{}
+	if err := c.ShouldBind(game); err != nil {
+		context.WithFields(logrus.Fields{
+			"userID": user.ID,
+			"error":  err,
+		}).Error("createGame failed at ShouldBind ", err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	game.Creator = user.ID
+	if err := h.trivia.CreateGame(context, game); err != nil {
+		context.WithFields(logrus.Fields{
+			"game":  game,
+			"error": err,
+		}).Error("createGame failed at trivia.CreateGame")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusCreated, nil)
 }
+
 func (h *handler) getGame(c *gin.Context) {
 }
 func (h *handler) getGames(c *gin.Context) {
