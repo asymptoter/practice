@@ -80,7 +80,7 @@ func (s *TriviaTestSuite) TestTriviaFlow() {
 	// Get quizzes
 	body = bytes.NewBuffer([]byte{})
 	req, err = http.NewRequest("GET", s.host+"/api/v1/trivia/quizzes", body)
-	req.Header.Add("Content-Type", "application/json")
+	//req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("token", u.Token.String())
 	c = &http.Client{}
 	res, err = c.Do(req)
@@ -113,6 +113,23 @@ func (s *TriviaTestSuite) TestTriviaFlow() {
 	res, err = c.Do(req)
 	s.NoError(err, err)
 	s.Equal(http.StatusCreated, res.StatusCode)
+
+	// Get game
+	body = bytes.NewBuffer([]byte{})
+	req, err = http.NewRequest("GET", s.host+"/api/v1/trivia/games", body)
+	req.Header.Add("token", u.Token.String())
+	c = &http.Client{}
+	res, err = c.Do(req)
+	s.NoError(err, err)
+	s.Equal(http.StatusOK, res.StatusCode)
+	b, err = ioutil.ReadAll(res.Body)
+	defer s.Require().NoError(res.Body.Close())
+	s.NoError(err)
+	games := []*models.Game{}
+	s.Require().NoError(json.Unmarshal(b, &games))
+	s.Len(games, 1)
+	game.ID = 1
+	s.Equal(game, *games[0])
 }
 
 func TestSuite(t *testing.T) {

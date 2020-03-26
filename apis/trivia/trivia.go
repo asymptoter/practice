@@ -75,18 +75,18 @@ func (h *handler) createQuiz(c *gin.Context) {
 	c.JSON(http.StatusCreated, nil)
 }
 
-type GetQuizzesRequest struct {
-	Content  string `json:"content"`
-	Category string `json:"category"`
+type GetQuizzesParams struct {
+	Content  string `form:"content"`
+	Category string `form:"category"`
 }
 
 func (h *handler) getQuizzes(c *gin.Context) {
 	context := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
 	context = ctx.WithValue(context, "userID", user.ID)
-	var req GetQuizzesRequest
-	if err := c.ShouldBind(&req); err != nil {
-		context.WithField("error", err).Error("getQuizzes failed at ShouldBind ", err)
+	var req GetQuizzesParams
+	if err := c.Bind(&req); err != nil {
+		context.WithField("error", err).Error("getQuizzes failed at c.Bind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
@@ -96,7 +96,7 @@ func (h *handler) getQuizzes(c *gin.Context) {
 		context.WithFields(logrus.Fields{
 			"params": req,
 			"error":  err,
-		}).Error("createQuiz failed at trivia.CreateQuiz")
+		}).Error("getQuizzes failed at trivia.GetQuizzes")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -134,7 +134,32 @@ func (h *handler) createGame(c *gin.Context) {
 
 func (h *handler) getGame(c *gin.Context) {
 }
+
+type GetGamesParams struct {
+	Name string `form:"name"`
+}
+
 func (h *handler) getGames(c *gin.Context) {
+	context := ctx.Background()
+	user := c.MustGet("userInfo").(*models.User)
+	context = ctx.WithValue(context, "userID", user.ID)
+	var req GetGamesParams
+	if err := c.Bind(&req); err != nil {
+		context.WithField("error", err).Error("getGames failed at c.Bind ", err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := h.trivia.GetGames(context, user.ID, req.Name)
+	if err != nil {
+		context.WithFields(logrus.Fields{
+			"params": req,
+			"error":  err,
+		}).Error("getQuiz failed at trivia.GetGames")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, res)
 }
 func (h *handler) answer(c *gin.Context) {
 }

@@ -17,6 +17,7 @@ type Store interface {
 	CreateQuiz(context ctx.CTX, quiz *models.Quiz) error
 	GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category string) ([]*models.Quiz, error)
 	CreateGame(context ctx.CTX, game *models.Game) error
+	GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*models.Game, error)
 }
 
 type impl struct {
@@ -82,4 +83,14 @@ func (s *impl) CreateGame(context ctx.CTX, g *models.Game) error {
 	}
 	context.Info(res.RowsAffected())
 	return nil
+}
+
+func (s *impl) GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*models.Game, error) {
+	res := []*models.Game{}
+	query := "SELECT id, name, quiz_ids, mode, count_down, creator FROM games WHERE creator = $1 AND name LIKE '%' || $2 || '%'"
+	if err := s.db.SelectContext(context, &res, query, userID, name); err != nil {
+		context.WithField("err", err).Error("GetGames failed at db.SelectContext")
+		return nil, err
+	}
+	return res, nil
 }
