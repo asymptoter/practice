@@ -9,6 +9,7 @@ import (
 	"github.com/asymptoter/practice-backend/models"
 	"github.com/asymptoter/practice-backend/store/trivia"
 	"github.com/asymptoter/practice-backend/store/user"
+	"github.com/google/uuid"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -38,12 +39,12 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 	r.Handle("DELETE", "/quiz", h.deleteQuiz)
 	// Create a game
 	r.Handle("POST", "/game", h.createGame)
-	// Play a game
-	r.Handle("GET", "/game", h.getGame)
 	// List games created by creator
 	r.Handle("GET", "/games", h.getGames)
 	// Delete game created by creator
 	r.Handle("DELETE", "/game", h.deleteGame)
+	// Play a game
+	r.Handle("GET", "/game", h.startGame)
 	// Answer a quiz in a game
 	r.Handle("POST", "/answer", h.answer)
 }
@@ -132,9 +133,6 @@ func (h *handler) createGame(c *gin.Context) {
 	c.JSON(http.StatusCreated, nil)
 }
 
-func (h *handler) getGame(c *gin.Context) {
-}
-
 type GetGamesParams struct {
 	Name string `form:"name"`
 }
@@ -161,6 +159,43 @@ func (h *handler) getGames(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+type StartGameParams struct {
+	GameID string `form:"gameID"`
+}
+
+type StartGameResponse struct {
+	Game *models.Game `json:"game"`
+	Quiz *models.Quiz `json:"quiz"`
+}
+
+func (h *handler) startGame(c *gin.Context) {
+	context := ctx.Background()
+	user := c.MustGet("userInfo").(*models.User)
+	context = ctx.WithValue(context, "userID", user.ID)
+
+	var req StartGameParams
+	if err := c.Bind(&req); err != nil {
+		context.WithField("error", err).Error("startGames failed at c.Bind ", err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+	gameID := uuid.MustParse(req.GameID)
+	context = ctx.WithValue(context, "gameID", gameID)
+
+	game, quiz, err := h.trivia.StartGame(context, user.ID, gameID)
+	if err != nil {
+		context.WithField("error", err).Error("startGame failed at trivia.GetGame")
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, StartGameResponse{
+		Game: game,
+		Quiz: quiz,
+	})
+}
+
 func (h *handler) answer(c *gin.Context) {
 }
 func (h *handler) deleteGame(c *gin.Context) {

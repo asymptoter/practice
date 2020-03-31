@@ -26,12 +26,21 @@ type Quiz struct {
 }
 
 type Game struct {
-	ID        int64         `json:"ID" db:"id"`
+	ID        uuid.UUID     `json:"ID" db:"id"`
 	Name      string        `json:"name" db:"name"`
 	QuizIDs   pq.Int64Array `json:"quizIDs" db:"quiz_ids"`
 	Mode      TriviaMode    `json:"mode" db:"mode"`
 	CountDown int           `json:"countDown" db:"count_down"`
 	Creator   uuid.UUID     `json:"creator" db:"creator"`
+}
+
+type GameStatus struct {
+	Name      string        `json:"name"`
+	QuizNo    int           `json:"quizNo"`
+	QuizIDs   pq.Int64Array `json:"quizIDs"`
+	Answers   []string      `json:"answers"`
+	Mode      TriviaMode    `json:"mode"`
+	CountDown int           `json:"countDown"`
 }
 
 type GameResult struct {

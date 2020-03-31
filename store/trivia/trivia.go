@@ -2,6 +2,8 @@ package trivia
 
 import (
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/redis"
@@ -18,6 +20,7 @@ type Store interface {
 	GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category string) ([]*models.Quiz, error)
 	CreateGame(context ctx.CTX, game *models.Game) error
 	GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*models.Game, error)
+	StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Game, *models.Quiz, error)
 }
 
 type impl struct {
@@ -72,16 +75,23 @@ func (s *impl) GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category s
 }
 
 func (s *impl) CreateGame(context ctx.CTX, g *models.Game) error {
+	if len(g.QuizIDs) < 1 {
+		return errors.New("the number of quiz should be positive")
+	}
+	if g.CountDown < 1 {
+		return errors.New("count down should greater than zero")
+	}
+
+	g.ID = uuid.New()
 	// Write db
-	res, err := s.db.ExecContext(context, "INSERT INTO games (name, quiz_ids, mode, count_down, creator) SELECT $1, $2::int[], $3, $4, $5 WHERE NOT EXISTS ((SELECT * FROM unnest($2::int[])) EXCEPT (SELECT id FROM quizzes))", g.Name, pq.Array(g.QuizIDs), g.Mode, g.CountDown, g.Creator)
-	if err != nil {
+	query := "INSERT INTO games (id, name, quiz_ids, mode, count_down, creator) SELECT $1, $2, $3::int[], $4, $5, $6 WHERE NOT EXISTS ((SELECT * FROM unnest($3::int[])) EXCEPT (SELECT id FROM quizzes))"
+	if _, err := s.db.ExecContext(context, query, g.ID, g.Name, pq.Array(g.QuizIDs), g.Mode, g.CountDown, g.Creator); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": g.Creator,
 		}).Error("CreateGame failed at db.ExecContext")
 		return err
 	}
-	context.Info(res.RowsAffected())
 	return nil
 }
 
@@ -93,4 +103,56 @@ func (s *impl) GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*mode
 		return nil, err
 	}
 	return res, nil
+}
+
+func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Game, *models.Quiz, error) {
+	g := &models.Game{}
+	query := "SELECT id, name, quiz_ids, mode, count_down, creator FROM games WHERE id = $1"
+	if err := s.db.GetContext(context, g, query, gameID); err != nil {
+		context.WithField("err", err).Error("StartGame failed at db.GetContext")
+		return nil, nil, err
+	}
+
+	quizzes := []*models.Quiz{}
+	query = "SELECT id, content, image_url, options, answer FROM quizzes WHERE id IN (SELECT * FROM unnest($1::int[]))"
+	if err := s.db.SelectContext(context, &quizzes, query, g.QuizIDs); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":     err,
+			"quizIDs": g.QuizIDs,
+		}).Error("StartGame failed at db.SelectContext")
+		return nil, nil, err
+	}
+
+	for _, q := range quizzes {
+		key := "trivia:quizID:" + strconv.FormatInt(q.ID, 10)
+		if err := s.redis.Set(context, key, q, 10*time.Minute); err != nil {
+			context.WithFields(logrus.Fields{
+				"err":   err,
+				"key":   key,
+				"value": q,
+			}).Error("StartGame failed at redis.Set")
+			return nil, nil, err
+		}
+	}
+
+	status := &models.GameStatus{
+		Name:      g.Name,
+		QuizNo:    0,
+		QuizIDs:   g.QuizIDs,
+		Answers:   []string{},
+		Mode:      g.Mode,
+		CountDown: g.CountDown,
+	}
+	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
+	if err := s.redis.Set(context, key, status, 10*time.Minute); err != nil {
+		context.WithFields(logrus.Fields{
+			"err":   err,
+			"key":   key,
+			"value": status,
+		}).Error("StartGame failed at redis.Set")
+		return nil, nil, err
+	}
+
+	quizzes[0].Answer = ""
+	return g, quizzes[0], nil
 }
