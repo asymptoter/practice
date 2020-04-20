@@ -3,7 +3,6 @@ package trivia
 import (
 	"testing"
 
-	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
 	"github.com/asymptoter/practice-backend/base/docker"
 	"github.com/asymptoter/practice-backend/base/redis"
@@ -30,7 +29,6 @@ func TestTriviaSuite(t *testing.T) {
 }
 
 func (s *triviaSuite) SetupSuite() {
-	config.Init(". ")
 	s.db = docker.GetPostgreSQL()
 	s.redis = docker.GetRedis()
 	s.trivia = NewStore(s.db, s.redis)
@@ -77,11 +75,33 @@ func (s *triviaSuite) TestCreateQuiz() {
 	context := ctx.Background()
 	userID := uuid.New()
 	q := &models.Quiz{
-		Content:  "content",
+		Content:  "quiz1",
 		Options:  pq.StringArray{"1", "2", "3", "4"},
 		Answer:   "4",
 		Creator:  userID,
 		Category: "no",
 	}
 	s.NoError(s.trivia.CreateQuiz(context, q))
+}
+
+func (s *triviaSuite) TestCreateGame() {
+	context := ctx.Background()
+	userID := uuid.New()
+	q := &models.Quiz{
+		Content:  "quiz1",
+		Options:  pq.StringArray{"1", "2", "3", "4"},
+		Answer:   "4",
+		Creator:  userID,
+		Category: "no",
+	}
+	s.NoError(s.trivia.CreateQuiz(context, q))
+	g := &models.Game{
+		ID:        uuid.New(),
+		Name:      "game1",
+		QuizIDs:   pq.Int64Array{1},
+		Mode:      models.TriviaModePlayAll,
+		CountDown: 10,
+		Creator:   userID,
+	}
+	s.NoError(s.trivia.CreateGame(context, g))
 }

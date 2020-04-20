@@ -26,7 +26,7 @@ func GetPostgreSQL() *sqlx.DB {
 		}
 	}
 
-	postgreSQLResource, err = Pool.Run("postgres", "9.6", []string{"POSTGRES_USER=a", "POSTGRES_PASSWORD=b", "POSTGRES_DB=practice"})
+	postgreSQLResource, err = Pool.Run("postgres", "latest", []string{"POSTGRES_USER=a", "POSTGRES_PASSWORD=b", "POSTGRES_DB=practice"})
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
 	}
@@ -62,7 +62,7 @@ func GetRedis() redis.Service {
 		}
 	}
 
-	redisResource, err = Pool.Run("redis", "3.2", nil)
+	redisResource, err = Pool.Run("redis", "latest", nil)
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
 	}
@@ -71,7 +71,6 @@ func GetRedis() redis.Service {
 		addr := fmt.Sprintf("localhost:%s", redisResource.GetPort("6379/tcp"))
 		res = redis.NewService(addr)
 		return nil
-		//return res.redis.Get().Ping().Err()
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
