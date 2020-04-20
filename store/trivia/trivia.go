@@ -21,6 +21,7 @@ type Store interface {
 	CreateGame(context ctx.CTX, game *models.Game) error
 	GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*models.Game, error)
 	StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Game, *models.Quiz, error)
+	Answer(context ctx.CTX, userID, gameID uuid.UUID, answer string) (*models.Quiz, *models.GameResult, error)
 }
 
 type impl struct {
@@ -39,7 +40,10 @@ func (s *impl) CreateQuiz(context ctx.CTX, q *models.Quiz) error {
 	// Check input
 	if len(q.Options) < 2 {
 		return errors.New("number of options should be greater than 1")
+	} else if len(q.Options) > 4 {
+		return errors.New("number of options should be less than 5")
 	}
+
 	flag := true
 	for _, v := range q.Options {
 		if v == q.Answer {
@@ -136,12 +140,12 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 	}
 
 	status := &models.GameStatus{
-		Name:      g.Name,
 		QuizNo:    0,
 		QuizIDs:   g.QuizIDs,
 		Answers:   []string{},
 		Mode:      g.Mode,
 		CountDown: g.CountDown,
+		StartTime: time.Now().Unix(),
 	}
 	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
 	if err := s.redis.Set(context, key, status, 10*time.Minute); err != nil {
@@ -155,4 +159,65 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 
 	quizzes[0].Answer = ""
 	return g, quizzes[0], nil
+}
+
+func (s *impl) Answer(context ctx.CTX, userID, gameID uuid.UUID, answer string) (*models.Quiz, *models.GameResult, error) {
+	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
+	status := &models.GameStatus{}
+	if err := s.redis.Get(context, key, status); err != nil {
+		context.WithField("err", err).Error("Answer failed at redis.Get")
+		return nil, nil, err
+	}
+
+	status.QuizNo++
+	status.Answers = append(status.Answers, answer)
+	if isEnd(status) {
+		return nil, s.calculateGameResult(context, status, userID, gameID), nil
+	}
+
+	q := &models.Quiz{}
+	key = "trivia:quizID:" + strconv.FormatInt(int64(status.QuizIDs[status.QuizNo]), 10)
+	if err := s.redis.Get(context, key, q); err != nil {
+		context.WithField("err", err).Error("Answer failed at redis.Get")
+		return nil, nil, err
+	}
+
+	return q, nil, nil
+}
+
+func isEnd(s *models.GameStatus) bool {
+	if s.QuizNo == len(s.QuizIDs) {
+		return true
+	}
+	if s.Mode == models.TriviaModeNoWrong && s.Answers[s.QuizNo] != s.CorrectAnswers[s.QuizNo] {
+		return true
+	}
+	return false
+}
+
+func (s *impl) calculateGameResult(context ctx.CTX, status *models.GameStatus, userID, gameID uuid.UUID) *models.GameResult {
+	now := time.Now().Unix()
+	res := &models.GameResult{
+		UserID:    userID,
+		GameID:    gameID,
+		PlayDate:  now,
+		TimeSpent: now - status.StartTime,
+	}
+
+	for i, answer := range status.Answers {
+		if answer == status.CorrectAnswers[i] {
+			res.CorrectCount++
+		}
+	}
+
+	// Store game result
+	query := "INSERT into TABLE game_result (user_id, game_id, play_date, correct_count, time_spent) VALUES ($1, $2, $3, $4, $5)"
+	if _, err := s.db.ExecContext(context, query, res.UserID, res.GameID, res.PlayDate, res.CorrectCount, res.TimeSpent); err != nil {
+		context.WithFields(logrus.Fields{
+			"err": err,
+			"res": res,
+		}).Error("CreateQuiz failed at db.ExecContext")
+		return nil
+	}
+	return res
 }

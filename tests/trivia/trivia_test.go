@@ -42,7 +42,7 @@ func (s *TriviaTestSuite) SetupTest() {
 	_, err = s.sql.Exec("TRUNCATE games")
 	s.NoError(err)
 
-	s.redis = redis.NewService()
+	s.redis = redis.NewService(config.Value.Redis.Address)
 	s.user = user.NewStore(s.sql, s.redis)
 }
 

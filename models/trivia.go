@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -35,17 +33,19 @@ type Game struct {
 }
 
 type GameStatus struct {
-	Name      string        `json:"name"`
-	QuizNo    int           `json:"quizNo"`
-	QuizIDs   pq.Int64Array `json:"quizIDs"`
-	Answers   []string      `json:"answers"`
-	Mode      TriviaMode    `json:"mode"`
-	CountDown int           `json:"countDown"`
+	QuizNo         int           `json:"quizNo"`
+	QuizIDs        pq.Int64Array `json:"quizIDs"`
+	Answers        []string      `json:"answers"`
+	CorrectAnswers []string      `json:"correctAnswers"`
+	Mode           TriviaMode    `json:"mode"`
+	CountDown      int           `json:"countDown"`
+	StartTime      int64         `json:"startTime"`
 }
 
 type GameResult struct {
-	GameID       int64         `json:"ID" db:"id"`
-	Player       uuid.UUID     `json:"player" db:"player"`
-	TimeSpent    time.Duration `json:"timeSpent" db:"time_spent"`
-	CorrectCount int           `json:"correctCount" db:"correct_count"`
+	UserID       uuid.UUID `json:"userID" db:"user_id"`
+	GameID       uuid.UUID `json:"gameID" db:"game_id"`
+	PlayDate     int64     `json:"playDate" db:"play_date"`
+	CorrectCount int       `json:"correctCount" db:"correct_count"`
+	TimeSpent    int64     `json:"timeSpent" db:"time_spent"`
 }

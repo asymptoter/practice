@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -52,7 +53,7 @@ func main() {
 		log.Fatal("exec.Command failed", err)
 	}
 
-	config.Init(string(pwd))
+	cfg := config.Init(string(pwd))
 	cronJob := cron.New(cron.WithSeconds())
 	cronJob.AddFunc("*/30 * * * * *", func() {
 		config.Init(string(pwd))
@@ -61,10 +62,12 @@ func main() {
 		cronJob.Start()
 	}()
 
-	db := db.MustNew("postgres", true)
+	dbCfg := cfg.Database
+	db := db.MustNew("postgres", fmt.Sprintf(dbCfg.ConnectionString, dbCfg.Host, dbCfg.Port))
 	defer db.Close()
 
-	redisService := redis.NewService()
+	redisCfg := cfg.Redis
+	redisService := redis.NewService(fmt.Sprintf(redisCfg.ConnectionString, redisCfg.Host, redisCfg.Port))
 
 	httpServer := newHttpServer(db, redisService)
 	// Start http server

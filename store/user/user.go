@@ -54,8 +54,7 @@ func (u *impl) Create(context ctx.CTX, user *models.User) error {
 func (u *impl) GetByToken(context ctx.CTX, token uuid.UUID) (*models.User, error) {
 	user := &models.User{}
 	tokenString := token.String()
-	val, err := u.redis.Get(context, tokenString)
-	if err != nil {
+	if err := u.redis.Get(context, tokenString, user); err != nil {
 		if err := u.sql.Get(user, "SELECT email, id FROM users WHERE token = $1", token); err != nil {
 			context.WithField("err", err).Error("GetByToken failed at sql.Get")
 			return nil, err
@@ -67,10 +66,6 @@ func (u *impl) GetByToken(context ctx.CTX, token uuid.UUID) (*models.User, error
 			context.WithField("err", err).Error("GetByToken failed at redis.Set")
 			// Fail but still acceptable result, so no return here
 		}
-	} else if err := json.Unmarshal([]byte(val), user); err != nil {
-		context.WithField("err", err).Error("GetUserByToken failed at Unmarshal")
-		return nil, err
 	}
-
 	return user, nil
 }

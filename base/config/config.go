@@ -40,16 +40,19 @@ type EmailConfiguration struct {
 }
 
 type DatabaseConfiguration struct {
-	Address         string `yaml:"address"`
-	Port            int    `yaml:"port"`
-	DatabaseName    string `yaml:"databaseName"`
-	UserName        string `yaml:"userName"`
-	Password        string `yaml:"password"`
-	ConnectionRetry int    `yaml:"connectionRetry"`
+	Host             string `yaml:"host"`
+	Port             string `yaml:"port"`
+	DatabaseName     string `yaml:"databaseName"`
+	UserName         string `yaml:"userName"`
+	Password         string `yaml:"password"`
+	ConnectionRetry  int    `yaml:"connectionRetry"`
+	ConnectionString string `yaml:"connectionString"`
 }
 
 type RedisConfiguration struct {
-	Address string `yaml:"address"`
+	Host             string `yaml:"host"`
+	Port             string `yaml:"port"`
+	ConnectionString string `yaml:"connectionString"`
 }
 
 type Configuration struct {
@@ -58,7 +61,7 @@ type Configuration struct {
 	Redis    RedisConfiguration    `yaml:"redis"`
 }
 
-func Init(pwd string) {
+func Init(pwd string) Configuration {
 	context := ctx.Background()
 	file, err := ioutil.ReadFile(pwd[:len(pwd)-1] + "/../../config/config.yml")
 	if err != nil {
@@ -73,8 +76,9 @@ func Init(pwd string) {
 	b1, _ := json.Marshal(temp)
 	b2, _ := json.Marshal(Value)
 	if string(b1) == string(b2) {
-		return
+		return Value
 	}
 	Value = temp
 	context.Info("Configuration updated.")
+	return Value
 }

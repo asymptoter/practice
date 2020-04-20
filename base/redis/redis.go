@@ -1,10 +1,10 @@
 package redis
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
-	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
 
 	"github.com/gomodule/redigo/redis"
@@ -12,7 +12,7 @@ import (
 )
 
 type Service interface {
-	Get(context ctx.CTX, key string) ([]byte, error)
+	Get(context ctx.CTX, key string, res interface{}) error
 	Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error
 }
 
@@ -20,14 +20,12 @@ type impl struct {
 	redis *redis.Pool
 }
 
-func NewService() Service {
-	cfg := config.Value.Redis
-
+func NewService(address string) Service {
 	pool := &redis.Pool{
 		MaxIdle:     5,
 		IdleTimeout: 240 * time.Second,
 		// Dial or DialContext must be set. When both are set, DialContext takes precedence over Dial.
-		Dial: func() (redis.Conn, error) { return redis.Dial("tcp", cfg.Address) },
+		Dial: func() (redis.Conn, error) { return redis.Dial("tcp", address) },
 	}
 
 	return &impl{
@@ -41,39 +39,41 @@ func Close(context ctx.CTX, functionName string, conn redis.Conn) {
 	}
 }
 
-func (r *impl) Get(context ctx.CTX, key string) ([]byte, error) {
+func (r *impl) Get(context ctx.CTX, key string, res interface{}) error {
+	context = ctx.WithValue(context, "key", key)
 	if len(key) == 0 {
-		return nil, errors.New("empty key")
+		return errors.New("empty key")
 	}
 	conn := r.redis.Get()
 	defer Close(context, "Get", conn)
 
 	val, err := conn.Do("GET", key)
 	if err != nil {
-		context.WithFields(logrus.Fields{
-			"err": err,
-			"key": key,
-		}).Error("Get failed at conn.Do")
-		return nil, err
+		context.WithField("err", err).Error("Get failed at conn.Do")
+		return err
 	}
 
-	res, ok := val.([]byte)
-	if !ok {
-		return nil, errors.New("type assertion failed")
+	if err := json.Unmarshal(val.([]byte), res); err != nil {
+		context.WithField("err", err).Error("Get failed at json.Unmarshal")
+		return err
 	}
-	return res, nil
+	return nil
 }
 
 func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
+	context = ctx.WithValue(context, "key", key)
 	conn := r.redis.Get()
 	defer Close(context, "Set", conn)
 
-	_, err := conn.Do("SET", key, value, "EX", int64(expiration))
+	v, err := json.Marshal(value)
 	if err != nil {
+		context.WithField("err", err).Error("Set failed at json.Masharl")
+		return err
+	}
+
+	if _, err := conn.Do("SET", key, v, "EX", int64(expiration)); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":        err,
-			"key":        key,
-			"value":      value,
 			"expiration": expiration,
 		}).Error("Set failed at conn.Do")
 		return err

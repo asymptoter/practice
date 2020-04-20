@@ -110,8 +110,8 @@ func (h *handler) activation(c *gin.Context) {
 	context := ctx.Background()
 
 	activeAccountKey := "auth:active:activeToken:" + activeToken
-	token, err := h.redis.Get(context, activeAccountKey)
-	if err != nil {
+	token := ""
+	if err := h.redis.Get(context, activeAccountKey, &token); err != nil {
 		context.WithFields(logrus.Fields{
 			"err":    err,
 			"userID": userID,
@@ -120,7 +120,7 @@ func (h *handler) activation(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.sql.Exec("UPDATE users SET token=$1 WHERE id=$2;", string(token), userID); err != nil {
+	if _, err := h.sql.Exec("UPDATE users SET token=$1 WHERE id=$2;", token, userID); err != nil {
 		context.WithField("err", err).Error("sql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -128,7 +128,7 @@ func (h *handler) activation(c *gin.Context) {
 	context.Info("sql.Exec done.")
 
 	c.JSON(http.StatusOK, ActivationResponse{
-		Token: string(token),
+		Token: token,
 	})
 }
 
