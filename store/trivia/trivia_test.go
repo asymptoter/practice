@@ -58,7 +58,7 @@ func (s *triviaSuite) SetupTest() {
 }
 
 func (s *triviaSuite) TearDownTest() {
-	_, err := s.db.Exec("TRUNCATE TABLE quizzes")
+	_, err := s.db.Exec("TRUNCATE TABLE quizzes RESTART IDENTITY")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("TRUNCATE TABLE games")
 	s.Require().NoError(err)
@@ -104,4 +104,39 @@ func (s *triviaSuite) TestCreateGame() {
 		Creator:   userID,
 	}
 	s.NoError(s.trivia.CreateGame(context, g))
+}
+
+func (s *triviaSuite) TestPlayGame() {
+	context := ctx.Background()
+	userID := uuid.New()
+
+	s.NoError(s.trivia.CreateQuiz(context, &models.Quiz{
+		Content:  "quiz1",
+		Options:  pq.StringArray{"1", "2", "3", "4"},
+		Answer:   "4",
+		Creator:  userID,
+		Category: "no",
+	}))
+	q, err := s.trivia.GetQuizzes(context, userID, "", "")
+	s.NoError(err)
+	s.Equal(int64(1), q[0].ID)
+
+	s.NoError(s.trivia.CreateGame(context, &models.Game{
+		Name:      "game1",
+		QuizIDs:   pq.Int64Array{1},
+		Mode:      models.TriviaModePlayAll,
+		CountDown: 10,
+		Creator:   userID,
+	}))
+
+	g, err := s.trivia.GetGames(context, userID, "game1")
+	s.NoError(err)
+	s.Equal(1, len(g))
+
+	_, _, err = s.trivia.StartGame(context, userID, g[0].ID)
+	s.NoError(err)
+
+	_, res, err := s.trivia.Answer(context, userID, g[0].ID, "4")
+	s.NoError(err)
+	s.Equal(1, res.CorrectCount)
 }

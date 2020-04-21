@@ -127,6 +127,14 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 		return nil, nil, err
 	}
 
+	status := &models.GameStatus{
+		QuizNo:    0,
+		QuizIDs:   g.QuizIDs,
+		Answers:   []string{},
+		Mode:      g.Mode,
+		CountDown: g.CountDown,
+		StartTime: time.Now().Unix(),
+	}
 	for _, q := range quizzes {
 		key := "trivia:quizID:" + strconv.FormatInt(q.ID, 10)
 		if err := s.redis.Set(context, key, q, 10*time.Minute); err != nil {
@@ -137,16 +145,9 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 			}).Error("StartGame failed at redis.Set")
 			return nil, nil, err
 		}
+		status.CorrectAnswers = append(status.CorrectAnswers, q.Answer)
 	}
 
-	status := &models.GameStatus{
-		QuizNo:    0,
-		QuizIDs:   g.QuizIDs,
-		Answers:   []string{},
-		Mode:      g.Mode,
-		CountDown: g.CountDown,
-		StartTime: time.Now().Unix(),
-	}
 	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
 	if err := s.redis.Set(context, key, status, 10*time.Minute); err != nil {
 		context.WithFields(logrus.Fields{
@@ -211,12 +212,12 @@ func (s *impl) calculateGameResult(context ctx.CTX, status *models.GameStatus, u
 	}
 
 	// Store game result
-	query := "INSERT into TABLE game_result (user_id, game_id, play_date, correct_count, time_spent) VALUES ($1, $2, $3, $4, $5)"
+	query := "INSERT into game_results (user_id, game_id, play_date, correct_count, time_spent) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := s.db.ExecContext(context, query, res.UserID, res.GameID, res.PlayDate, res.CorrectCount, res.TimeSpent); err != nil {
 		context.WithFields(logrus.Fields{
 			"err": err,
 			"res": res,
-		}).Error("CreateQuiz failed at db.ExecContext")
+		}).Error("calculateGameResult failed at db.ExecContext")
 		return nil
 	}
 	return res
