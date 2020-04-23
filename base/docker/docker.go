@@ -9,6 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest"
+	dc "github.com/ory/dockertest/docker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,8 +17,7 @@ var Pool *dockertest.Pool
 var postgreSQLResource *dockertest.Resource
 var redisResource *dockertest.Resource
 
-func GetPostgreSQL() *sqlx.DB {
-	var db *sql.DB
+func initPool() {
 	var err error
 	if Pool == nil {
 		Pool, err = dockertest.NewPool("")
@@ -25,10 +25,42 @@ func GetPostgreSQL() *sqlx.DB {
 			log.Fatalf("Could not connect to docker: %s", err)
 		}
 	}
+}
 
-	postgreSQLResource, err = Pool.Run("postgres", "latest", []string{"POSTGRES_USER=a", "POSTGRES_PASSWORD=b", "POSTGRES_DB=practice"})
+func getContainerID(image string) string {
+	cs, err := Pool.Client.ListContainers(dc.ListContainersOptions{})
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		log.Fatalf("Could not list containers: %s", err)
+	}
+
+	name := "/unittest_" + image
+	for _, c := range cs {
+		if c.Names[0] == name {
+			return c.ID
+		}
+	}
+	return ""
+}
+
+func GetPostgreSQL() *sqlx.DB {
+	var db *sql.DB
+	var err error
+
+	initPool()
+
+	cID := getContainerID("postgres")
+	if len(cID) != 0 {
+		postgreSQLResource = &dockertest.Resource{}
+		container, err := Pool.Client.InspectContainer(cID)
+		if err != nil {
+			log.Fatalf("Could not get containers: %s", err)
+		}
+		postgreSQLResource.Container = container
+	} else {
+		postgreSQLResource, err = Pool.RunWithOptions(&dockertest.RunOptions{Name: "unittest_postgres", Repository: "postgres", Tag: "latest", Env: []string{"POSTGRES_USER=a", "POSTGRES_PASSWORD=b", "POSTGRES_DB=practice"}})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}
 	}
 
 	if err = Pool.Retry(func() error {
@@ -37,6 +69,7 @@ func GetPostgreSQL() *sqlx.DB {
 		if err != nil {
 			return err
 		}
+		return nil
 		return db.Ping()
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
@@ -54,17 +87,22 @@ func PurgePostgreSQL() {
 func GetRedis() redis.Service {
 	var res redis.Service
 	var err error
+	initPool()
 
-	if Pool == nil {
-		Pool, err = dockertest.NewPool("")
+	cID := getContainerID("redis")
+
+	if len(cID) != 0 {
+		redisResource = &dockertest.Resource{}
+		container, err := Pool.Client.InspectContainer(cID)
 		if err != nil {
-			log.Fatalf("Could not connect to docker: %s", err)
+			log.Fatalf("Could not get containers: %s", err)
 		}
-	}
-
-	redisResource, err = Pool.Run("redis", "latest", nil)
-	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		redisResource.Container = container
+	} else {
+		redisResource, err = Pool.RunWithOptions(&dockertest.RunOptions{Name: "unittest_redis", Repository: "redis", Tag: "latest"})
+		if err != nil {
+			log.Fatalf("Could not start resource: %s", err)
+		}
 	}
 
 	if err = Pool.Retry(func() error {

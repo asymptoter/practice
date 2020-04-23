@@ -6,6 +6,7 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/csigo/test v0.0.0-20200313044330-ac7a7c1ee092
+	github.com/docker/go-units v0.4.0
 	github.com/emersion/go-imap v1.0.4
 	github.com/fatih/structs v1.1.0
 	github.com/fsouza/go-dockerclient v1.6.3

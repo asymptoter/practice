@@ -196,7 +196,28 @@ func (h *handler) startGame(c *gin.Context) {
 	})
 }
 
+type AnswerRequest struct {
+	GameID uuid.UUID `json:"gameID"`
+	Answer string    `json:"answer"`
+}
+
+type AnswerResponse struct {
+	Quiz *models.Quiz `json:"quiz"`
+}
+
 func (h *handler) answer(c *gin.Context) {
+	context := ctx.Background()
+	user := c.MustGet("userInfo").(*models.User)
+	context = ctx.WithValue(context, "userID", user.ID)
+
+	if err := c.ShouldBind(game); err != nil {
+		context.WithFields(logrus.Fields{
+			"userID": user.ID,
+			"error":  err,
+		}).Error("createGame failed at ShouldBind ", err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
 }
 func (h *handler) deleteGame(c *gin.Context) {
 }

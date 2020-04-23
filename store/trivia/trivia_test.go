@@ -36,21 +36,21 @@ func (s *triviaSuite) SetupSuite() {
 }
 
 func (s *triviaSuite) initDB() {
-	_, err := s.db.Exec("CREATE SEQUENCE quizzes_id_seq;")
+	_, err := s.db.Exec("CREATE SEQUENCE IF NOT EXISTS quizzes_id_seq;")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("CREATE TABLE IF NOT EXISTS quizzes (id INT NOT NULL DEFAULT nextval('quizzes_id_seq'), content VARCHAR(512), image_url VARCHAR(100), options VARCHAR(64) ARRAY, answer VARCHAR(64), creator UUID, category VARCHAR(64), PRIMARY KEY (id))")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE INDEX ON quizzes (creator, category);")
+	_, err = s.db.Exec("CREATE INDEX IF NOT EXISTS creator_category_idx ON quizzes (creator, category);")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("ALTER SEQUENCE quizzes_id_seq OWNED BY quizzes.id;")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("CREATE TABLE IF NOT EXISTS games (id UUID, name VARCHAR(32), quiz_ids INT ARRAY, mode SMALLINT, count_down SMALLINT, creator UUID, PRIMARY KEY (id));")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE INDEX creator_name_idx ON games (creator, name);")
+	_, err = s.db.Exec("CREATE INDEX IF NOT EXISTS creator_name_idx ON games (creator, name);")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("CREATE TABLE IF NOT EXISTS game_results (user_id UUID, game_id UUID, play_date BIGINT, correct_count INT, time_spent BIGINT, PRIMARY KEY (user_id, game_id, play_date));")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE INDEX ON game_results (game_id);")
+	_, err = s.db.Exec("CREATE INDEX IF NOT EXISTS game_id_idx ON game_results (game_id);")
 	s.Require().NoError(err)
 }
 
@@ -67,8 +67,8 @@ func (s *triviaSuite) TearDownTest() {
 }
 
 func (s *triviaSuite) TearDownSuite() {
-	docker.PurgePostgreSQL()
-	docker.PurgeRedis()
+	//docker.PurgePostgreSQL()
+	//docker.PurgeRedis()
 }
 
 func (s *triviaSuite) TestCreateQuiz() {
