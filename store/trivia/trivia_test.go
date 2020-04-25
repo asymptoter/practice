@@ -67,8 +67,6 @@ func (s *triviaSuite) TearDownTest() {
 }
 
 func (s *triviaSuite) TearDownSuite() {
-	//docker.PurgePostgreSQL()
-	//docker.PurgeRedis()
 }
 
 func (s *triviaSuite) TestCreateQuiz() {

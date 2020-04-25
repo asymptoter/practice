@@ -38,11 +38,13 @@ func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 	userStore := user.NewStore(db, redisService)
 	triviaStore := trivia.NewStore(db, redisService)
 	authApi.SetHttpHandler(v1.Group("/auth"), db, redisService, userStore)
-	triviaApi.SetHttpHandler(v1.Group("/trivia"), db, redisService, triviaStore, userStore)
+	triviaApi.SetHttpHandler(v1.Group("/trivia"), triviaStore, userStore)
 
 	return &http.Server{
-		Addr:    cfg.Address,
-		Handler: r,
+		Addr:         cfg.Address,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 }
 

@@ -58,7 +58,7 @@ func (s *impl) CreateQuiz(context ctx.CTX, q *models.Quiz) error {
 	// Write db
 	if _, err := s.db.ExecContext(context, "INSERT INTO quizzes (content, image_url, options, answer, creator, category) VALUES($1, $2, $3, $4, $5, $6)", q.Content, q.ImageURL, pq.Array(q.Options), q.Answer, q.Creator, q.Category); err != nil {
 		context.WithFields(logrus.Fields{
-			"err":    err,
+			"error":  err,
 			"conent": q.Content,
 			"userID": q.Creator,
 		}).Error("CreateQuiz failed at db.ExecContext")
@@ -71,7 +71,7 @@ func (s *impl) GetQuizzes(context ctx.CTX, userID uuid.UUID, content, category s
 	res := []*models.Quiz{}
 	query := "SELECT id, content, image_url, options, answer, creator, category FROM quizzes WHERE creator = $1 AND content LIKE '%' || $2 || '%' AND category LIKE '%' || $3 || '%'"
 	if err := s.db.SelectContext(context, &res, query, userID, content, category); err != nil {
-		context.WithField("err", err).Error("GetQuizzes failed at db.SelectContext")
+		context.WithField("error", err).Error("GetQuizzes failed at db.SelectContext")
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (s *impl) CreateGame(context ctx.CTX, g *models.Game) error {
 	query := "INSERT INTO games (id, name, quiz_ids, mode, count_down, creator) SELECT $1, $2, $3::int[], $4, $5, $6 WHERE NOT EXISTS ((SELECT * FROM unnest($3::int[])) EXCEPT (SELECT id FROM quizzes))"
 	if _, err := s.db.ExecContext(context, query, g.ID, g.Name, pq.Array(g.QuizIDs), g.Mode, g.CountDown, g.Creator); err != nil {
 		context.WithFields(logrus.Fields{
-			"err":    err,
+			"error":  err,
 			"userID": g.Creator,
 		}).Error("CreateGame failed at db.ExecContext")
 		return err
@@ -103,7 +103,7 @@ func (s *impl) GetGames(context ctx.CTX, userID uuid.UUID, name string) ([]*mode
 	res := []*models.Game{}
 	query := "SELECT id, name, quiz_ids, mode, count_down, creator FROM games WHERE creator = $1 AND name LIKE '%' || $2 || '%'"
 	if err := s.db.SelectContext(context, &res, query, userID, name); err != nil {
-		context.WithField("err", err).Error("GetGames failed at db.SelectContext")
+		context.WithField("error", err).Error("GetGames failed at db.SelectContext")
 		return nil, err
 	}
 	return res, nil
@@ -113,7 +113,7 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 	g := &models.Game{}
 	query := "SELECT id, name, quiz_ids, mode, count_down, creator FROM games WHERE id = $1"
 	if err := s.db.GetContext(context, g, query, gameID); err != nil {
-		context.WithField("err", err).Error("StartGame failed at db.GetContext")
+		context.WithField("error", err).Error("StartGame failed at db.GetContext")
 		return nil, nil, err
 	}
 
@@ -121,7 +121,7 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 	query = "SELECT id, content, image_url, options, answer FROM quizzes WHERE id IN (SELECT * FROM unnest($1::int[]))"
 	if err := s.db.SelectContext(context, &quizzes, query, g.QuizIDs); err != nil {
 		context.WithFields(logrus.Fields{
-			"err":     err,
+			"error":   err,
 			"quizIDs": g.QuizIDs,
 		}).Error("StartGame failed at db.SelectContext")
 		return nil, nil, err
@@ -139,7 +139,7 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 		key := "trivia:quizID:" + strconv.FormatInt(q.ID, 10)
 		if err := s.redis.Set(context, key, q, 10*time.Minute); err != nil {
 			context.WithFields(logrus.Fields{
-				"err":   err,
+				"error": err,
 				"key":   key,
 				"value": q,
 			}).Error("StartGame failed at redis.Set")
@@ -151,7 +151,7 @@ func (s *impl) StartGame(context ctx.CTX, userID, gameID uuid.UUID) (*models.Gam
 	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
 	if err := s.redis.Set(context, key, status, 10*time.Minute); err != nil {
 		context.WithFields(logrus.Fields{
-			"err":   err,
+			"error": err,
 			"key":   key,
 			"value": status,
 		}).Error("StartGame failed at redis.Set")
@@ -166,7 +166,7 @@ func (s *impl) Answer(context ctx.CTX, userID, gameID uuid.UUID, answer string) 
 	key := "trivia:userID:" + userID.String() + ":gameID:" + gameID.String()
 	status := &models.GameStatus{}
 	if err := s.redis.Get(context, key, status); err != nil {
-		context.WithField("err", err).Error("Answer failed at redis.Get")
+		context.WithField("error", err).Error("Answer failed at redis.Get")
 		return nil, nil, err
 	}
 
@@ -179,7 +179,7 @@ func (s *impl) Answer(context ctx.CTX, userID, gameID uuid.UUID, answer string) 
 	q := &models.Quiz{}
 	key = "trivia:quizID:" + strconv.FormatInt(int64(status.QuizIDs[status.QuizNo]), 10)
 	if err := s.redis.Get(context, key, q); err != nil {
-		context.WithField("err", err).Error("Answer failed at redis.Get")
+		context.WithField("error", err).Error("Answer failed at redis.Get")
 		return nil, nil, err
 	}
 
@@ -215,8 +215,8 @@ func (s *impl) calculateGameResult(context ctx.CTX, status *models.GameStatus, u
 	query := "INSERT into game_results (user_id, game_id, play_date, correct_count, time_spent) VALUES ($1, $2, $3, $4, $5)"
 	if _, err := s.db.ExecContext(context, query, res.UserID, res.GameID, res.PlayDate, res.CorrectCount, res.TimeSpent); err != nil {
 		context.WithFields(logrus.Fields{
-			"err": err,
-			"res": res,
+			"error": err,
+			"res":   res,
 		}).Error("calculateGameResult failed at db.ExecContext")
 		return nil
 	}
