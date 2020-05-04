@@ -2,9 +2,9 @@
 package docker
 
 import (
-	"database/sql"
 	"fmt"
 
+	"github.com/asymptoter/practice-backend/base/db"
 	"github.com/asymptoter/practice-backend/base/redis"
 
 	"github.com/jmoiron/sqlx"
@@ -43,7 +43,7 @@ func getContainerID(image string) string {
 }
 
 func GetPostgreSQL() *sqlx.DB {
-	var db *sql.DB
+	var resDB *sqlx.DB
 	var err error
 
 	initPool()
@@ -65,17 +65,16 @@ func GetPostgreSQL() *sqlx.DB {
 
 	if err = Pool.Retry(func() error {
 		s := fmt.Sprintf("postgres://a:b@localhost:%s/%s?sslmode=disable", postgreSQLResource.GetPort("5432/tcp"), "practice")
-		db, err = sql.Open("postgres", s)
+		resDB, err = db.New("postgres", s)
 		if err != nil {
 			return err
 		}
-		return nil
-		return db.Ping()
+		return resDB.Ping()
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	return sqlx.NewDb(db, "postgres")
+	return resDB
 }
 
 func PurgePostgreSQL() {

@@ -16,12 +16,9 @@ import (
 
 type triviaSuite struct {
 	suite.Suite
-	db        *sqlx.DB
-	redis     redis.Service
-	trivia    Store
-	localhost string
-	dbPort    string
-	redisPort string
+	db     *sqlx.DB
+	redis  redis.Service
+	trivia Store
 }
 
 func TestTriviaSuite(t *testing.T) {
@@ -31,14 +28,14 @@ func TestTriviaSuite(t *testing.T) {
 func (s *triviaSuite) SetupSuite() {
 	s.db = docker.GetPostgreSQL()
 	s.redis = docker.GetRedis()
-	s.trivia = NewStore(s.db, s.redis)
+	s.trivia = New(s.db, s.redis)
 	s.initDB()
 }
 
 func (s *triviaSuite) initDB() {
 	_, err := s.db.Exec("CREATE SEQUENCE IF NOT EXISTS quizzes_id_seq;")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE TABLE IF NOT EXISTS quizzes (id INT NOT NULL DEFAULT nextval('quizzes_id_seq'), content VARCHAR(512), image_url VARCHAR(100), options VARCHAR(64) ARRAY, answer VARCHAR(64), creator UUID, category VARCHAR(64), PRIMARY KEY (id))")
+	_, err = s.db.Exec("CREATE TABLE IF NOT EXISTS quizzes (id INT NOT NULL DEFAULT nextval('quizzes_id_seq'), content VARCHAR(512), image_url VARCHAR(100), options VARCHAR(64) ARRAY, answer VARCHAR(64), creator UUID, category VARCHAR(64), PRIMARY KEY (id));")
 	s.Require().NoError(err)
 	_, err = s.db.Exec("CREATE INDEX IF NOT EXISTS creator_category_idx ON quizzes (creator, category);")
 	s.Require().NoError(err)
@@ -58,11 +55,11 @@ func (s *triviaSuite) SetupTest() {
 }
 
 func (s *triviaSuite) TearDownTest() {
-	_, err := s.db.Exec("TRUNCATE TABLE quizzes RESTART IDENTITY")
+	_, err := s.db.Exec("TRUNCATE TABLE quizzes RESTART IDENTITY;")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("TRUNCATE TABLE games")
+	_, err = s.db.Exec("TRUNCATE TABLE games;")
 	s.Require().NoError(err)
-	_, err = s.db.Exec("TRUNCATE TABLE game_results")
+	_, err = s.db.Exec("TRUNCATE TABLE game_results;")
 	s.Require().NoError(err)
 }
 

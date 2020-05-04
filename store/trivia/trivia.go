@@ -29,7 +29,7 @@ type impl struct {
 	redis redis.Service
 }
 
-func NewStore(db *sqlx.DB, redisService redis.Service) Store {
+func New(db *sqlx.DB, redisService redis.Service) Store {
 	return &impl{
 		db:    db,
 		redis: redisService,

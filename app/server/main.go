@@ -18,8 +18,9 @@ import (
 	"github.com/asymptoter/practice-backend/base/db"
 	_ "github.com/asymptoter/practice-backend/base/email"
 	"github.com/asymptoter/practice-backend/base/redis"
-	"github.com/asymptoter/practice-backend/store/trivia"
-	"github.com/asymptoter/practice-backend/store/user"
+	authStore "github.com/asymptoter/practice-backend/store/auth"
+	triviaStore "github.com/asymptoter/practice-backend/store/trivia"
+	userStore "github.com/asymptoter/practice-backend/store/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -35,9 +36,10 @@ func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 		})
 	})
 	v1 := r.Group("/api/v1")
-	userStore := user.NewStore(db, redisService)
-	triviaStore := trivia.NewStore(db, redisService)
-	authApi.SetHttpHandler(v1.Group("/auth"), db, redisService, userStore)
+	userStore := userStore.New(db, redisService)
+	triviaStore := triviaStore.New(db, redisService)
+	authStore := authStore.New(userStore)
+	authApi.SetHttpHandler(v1.Group("/auth"), db, redisService, userStore, authStore)
 	triviaApi.SetHttpHandler(v1.Group("/trivia"), triviaStore, userStore)
 
 	return &http.Server{

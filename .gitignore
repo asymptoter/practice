@@ -1,2 +1,3 @@
 databases/mysql/data/
 config.yml
+creds.json

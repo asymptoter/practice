@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id UUID,
     token UUID,
+    name VARCHAR(320),
     email VARCHAR(320) UNIQUE NOT NULL,
     password CHAR(60) NOT NULL, 
     register_date BIGINT,
