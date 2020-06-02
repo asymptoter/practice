@@ -1,5 +1,12 @@
 version: "3.7"
 services:
+    nginx:
+        build: "./nginx"
+        depends_on:
+            - server
+        ports:
+            - 443:443
+        container_name: "nginx_practice"
     server:
         image: "server:latest"
         build: 
@@ -8,33 +15,19 @@ services:
         depends_on:
             - "redis"
             - postgresql
-        ports:
-            - "8080:8080"
+        environment:
+            - PORT=8080
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/practice-backend/app/server"
             - "./config:/go/src/github.com/asymptoter/practice-backend/config"
-        container_name: "server"
+        container_name: "server_practice"
         restart: always
         #command: ["../../scripts/wait-for-it.sh", "postgresql:5432", "--", "go", "run", "main.go"]
     redis:
         image: "redis:latest"
         ports:
             - "6379:6379"
-        container_name: "redis"
-    #mysql:
-    #    image: "mysql:latest"
-    #    command: --default-authentication-plugin=caching_sha2_password
-    #    environment:
-    #        MYSQL_USER: "asymptoter"
-    #        MYSQL_PASSWORD: "password"
-    #        MYSQL_ROOT_PASSWORD: "password"
-    #        MYSQL_DATABASE: "practice"
-    #    ports:
-    #        - "3306:3306"
-    #    volumes:
-    #        - "./databases/mysql/data:/var/lib/mysql"
-    #        - "./databases/mysql/init:/docker-entrypoint-initdb.d:ro"
-    #    container_name: "mysql"
+        container_name: "redis_practice" 
     postgresql:
         image: postgres:latest
         restart: always
@@ -46,4 +39,4 @@ services:
         volumes:
             - "./databases/postgres/data:/var/lib/postgresql/"
             - "./databases/postgres/init:/docker-entrypoint-initdb.d/"
-        container_name: postgresql
+        container_name: "postgresql_practice"

@@ -1,3 +1,5 @@
 databases/mysql/data/
 config.yml
 creds.json
+*.crt
+*.key

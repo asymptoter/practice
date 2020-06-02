@@ -14,4 +14,5 @@ WORKDIR ./app/server
 #WORKDIR /go/src/github.com/asymptoter/practice-backend 
 COPY ./scripts/wait-for-it.sh ./scripts/wait-for-it.sh
 CMD go run main.go
+#EXPOSE 8080
 EXPOSE 8080

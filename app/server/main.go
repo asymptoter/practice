@@ -30,6 +30,15 @@ import (
 func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 	cfg := config.Value.Server
 	r := gin.Default()
+	/*
+		r.GET("/", func(c *gin.Context) {
+			c.Writer.Write([]byte("<!doctype html><html><head><title>This is the title of the webpage!</title></head><body>OK</body></html>"))
+		})
+
+		r.GET("/index.html", func(c *gin.Context) {
+			c.Writer.Write([]byte("<!doctype html><html><head><title>This is the title of the webpage!</title></head><body>OK</body></html>"))
+		})
+	*/
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
