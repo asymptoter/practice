@@ -44,7 +44,7 @@ func newHttpServer(db *sqlx.DB, redisService redis.Service) *http.Server {
 			"message": "pong",
 		})
 	})
-	v1 := r.Group("/api/v1")
+	v1 := r.Group("/v1")
 	userStore := userStore.New(db, redisService)
 	triviaStore := triviaStore.New(db, redisService)
 	authStore := authStore.New(userStore)
