@@ -3,3 +3,4 @@ config.yml
 creds.json
 *.crt
 *.key
+*.swp
