@@ -59,6 +59,7 @@ type Configuration struct {
 	Server   ServerConfiguration   `yaml:"server"`
 	Database DatabaseConfiguration `yaml:"database"`
 	Redis    RedisConfiguration    `yaml:"redis"`
+	Mongo    DatabaseConfiguration `yaml:"mongo"`
 }
 
 func Init(pwd string) Configuration {

@@ -40,3 +40,11 @@ services:
             - "./databases/postgres/data:/var/lib/postgresql/"
             - "./databases/postgres/init:/docker-entrypoint-initdb.d/"
         container_name: "postgresql_practice"
+    mongodb:
+        image: mongo:latest
+        restart: always
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: asymptoter
+            MONGO_INITDB_ROOT_PASSWORD: password
+        ports:
+            - 27017:27017
