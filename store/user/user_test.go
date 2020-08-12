@@ -1,7 +1,6 @@
 package user
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/asymptoter/practice-backend/base/ctx"
@@ -28,27 +27,27 @@ func (s *userSuite) SetupSuite() {
 	s.db = docker.GetPostgreSQL()
 	s.redis = docker.GetRedis()
 	s.userStore = New(s.db, s.redis)
-	s.initDB()
 }
 
 func (s *userSuite) initDB() {
-	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS users (id UUID, token UUID, name VARCHAR(320), email VARCHAR(320) UNIQUE NOT NULL, password CHAR(60) NOT NULL, register_date BIGINT, PRIMARY KEY (id));")
-	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE UNIQUE INDEX ON users (email);")
-	s.Require().NoError(err)
-	_, err = s.db.Exec("CREATE UNIQUE INDEX ON users (token);")
+	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS users (id UUID, token UUID UNIQUE, name VARCHAR(320), email VARCHAR(320) UNIQUE NOT NULL, password CHAR(60) NOT NULL, register_date BIGINT NOT NULL, PRIMARY KEY (id));")
 	s.Require().NoError(err)
 }
 
 func (s *userSuite) SetupTest() {
+	s.initDB()
 }
 
 func (s *userSuite) TearDownTest() {
-	_, err := s.db.Exec("TRUNCATE TABLE users")
+	_, err := s.db.Exec("DROP TABLE IF EXISTS users CASCADE")
 	s.Require().NoError(err)
 }
 
 func (s *userSuite) TearDownSuite() {
+	/*
+		docker.Purge("postgres")
+		docker.Purge("redis")
+	*/
 }
 
 func (s *userSuite) TestCreate() {
@@ -63,11 +62,10 @@ func (s *userSuite) TestCreate() {
 func (s *userSuite) TestCreateDuplicatedEmail() {
 	context := ctx.Background()
 	u := &models.User{
-		Email: "a@b",
+		Email: "c@b",
 	}
 	_, err := s.userStore.Create(context, u)
 	s.NoError(err)
 	_, err = s.userStore.Create(context, u)
 	s.Error(err)
-	fmt.Println(err)
 }

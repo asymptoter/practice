@@ -47,48 +47,26 @@ func GetMongoDB() *mgo.Session {
 
 func getResource(containerName string) *dockertest.Resource {
 	var err error
-	var res *dockertest.Resource
 	cID := getContainerID(containerName)
 	if len(cID) != 0 {
-		res = &dockertest.Resource{}
+		resources[containerName] = &dockertest.Resource{}
 		container, err := Pool.Client.InspectContainer(cID)
 		if err != nil {
 			log.Fatalf("Could not get containers: %s", err)
 		}
-		res.Container = container
+		resources[containerName].Container = container
 	} else {
-		res, err = Pool.RunWithOptions(&dockertest.RunOptions{Name: "unittest_" + containerName, Repository: containerName, Tag: "latest", Env: envs[containerName]})
+		resources[containerName], err = Pool.RunWithOptions(&dockertest.RunOptions{Name: "unittest_" + containerName, Repository: containerName, Tag: "latest", Env: envs[containerName]})
 		if err != nil {
 			log.Fatalf("Could not start resource: %s", err)
 		}
 	}
-	return res
+	return resources[containerName]
 }
 
 func Purge(containerName string) {
 	if err := Pool.Purge(resources[containerName]); err != nil {
 		log.Fatalf("Purge %s failed", containerName)
-	}
-}
-
-// TODO: deprecate
-func PurgePostgreSQL() {
-	if err := Pool.Purge(resources["postgres"]); err != nil {
-		log.Fatalf("Purge postgresql failed")
-	}
-}
-
-// TODO: deprecate
-func PurgeRedis() {
-	if err := Pool.Purge(resources["redis"]); err != nil {
-		log.Error("Purge redis failed")
-	}
-}
-
-// TODO: deprecate
-func PurgeMongo() {
-	if err := Pool.Purge(resources["mongo"]); err != nil {
-		log.Error("Purge redis failed")
 	}
 }
 

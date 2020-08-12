@@ -8,27 +8,28 @@ import (
 
 type CTX struct {
 	context.Context
-	logrus.FieldLogger
+	logrus.Entry
 }
 
 func Background() CTX {
+	log := logrus.New()
+	log.SetReportCaller(true)
 	return CTX{
-		Context:     context.Background(),
-		FieldLogger: logrus.StandardLogger(),
+		Context: context.Background(),
+		Entry:   *logrus.NewEntry(log),
 	}
 }
 
 func WithValue(parent CTX, key string, val interface{}) CTX {
 	return CTX{
-		Context:     context.WithValue(parent, key, val),
-		FieldLogger: parent.FieldLogger.WithField(key, val),
+		Context: context.WithValue(parent, key, val),
+		Entry:   *parent.Entry.WithField(key, val),
 	}
 }
 
-func WithValues(parent CTX, m map[string]interface{}) CTX {
-	c := parent
-	for k, v := range m {
-		c = WithValue(c, k, v)
+func WithValues(parent CTX, m logrus.Fields) CTX {
+	return CTX{
+		Context: parent.Context,
+		Entry:   *parent.Entry.WithFields(m),
 	}
-	return c
 }
