@@ -42,7 +42,7 @@ func (s *AuthTestSuite) TestAuthFlow() {
 	})
 
 	// Signup
-	resp, err := http.Post("http://127.0.0.1:8080/api/v1/auth/signup", "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post("http://127.0.0.1/api/v1/auth/signup", "application/json", bytes.NewBuffer(body))
 	s.NoError(err)
 	s.NotNil(resp)
 	s.Equal(http.StatusOK, resp.StatusCode, "Signup")
@@ -66,7 +66,7 @@ func (s *AuthTestSuite) TestAuthFlow() {
 	context.Info("Active OK")
 
 	// Login
-	resp, err = http.Post("http://127.0.0.1:8080/api/v1/auth/login", "application/json", bytes.NewBuffer(body))
+	resp, err = http.Post("http://127.0.0.1/api/v1/auth/login", "application/json", bytes.NewBuffer(body))
 	s.NoError(err)
 	s.NotNil(resp)
 	s.Equal(http.StatusOK, resp.StatusCode, "Login")

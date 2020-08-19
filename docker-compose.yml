@@ -14,9 +14,9 @@ services:
             dockerfile: "Dockerfile"
         depends_on:
             - "redis"
-            - postgresql
+            - "postgresql"
         environment:
-            - PORT=8080
+            - PORT=80
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/practice-backend/app/server"
             - "./config:/go/src/github.com/asymptoter/practice-backend/config"
