@@ -16,10 +16,24 @@ var (
 	Value          = Configuration{}
 )
 
+type Endpoint struct {
+	AuthURL  string `yaml:"authURL"`
+	TokenURL string `yaml:"tokenURL"`
+}
+
+type GoogleOAuth2Config struct {
+	ClientID     string   `yaml:"clientID"`
+	ClientSecret string   `yaml:"clientSecret"`
+	Endpoint     Endpoint `yaml:"endpoint"`
+	RedirectURL  string   `yaml:"redirectURL"`
+	Scopes       []string `yaml:"scopes"`
+}
+
 type ServerConfiguration struct {
-	Address string                     `yaml:"address"`
-	Email   OfficialEmailConfiguration `yaml:"email"`
-	Testing TestingConfiguration       `yaml:"testing"`
+	Address      string                     `yaml:"address"`
+	Email        OfficialEmailConfiguration `yaml:"email"`
+	Testing      TestingConfiguration       `yaml:"testing"`
+	GoogleOAuth2 GoogleOAuth2Config         `yaml:"googleOAuth2Config"`
 }
 
 type OfficialEmailConfiguration struct {

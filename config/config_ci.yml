@@ -1,0 +1,18 @@
+local:
+    server:
+        address: "0.0.0.0:8080"
+    redis:
+        host: "docker.for.mac.localhost"
+        port: "6379"
+        connectionString: "%s:%s"
+    database:
+        host: "docker.for.mac.localhost"
+        port: "5432"
+        databaseName: "practice"
+        userName: "asymptoter"
+        password: "password"
+        connectionRetry: 10
+        connectionString: "user=asymptoter password=password host=%s port=%s dbname=practice sslmode=disable"
+    mongo:
+        databaseName: "review"
+        connectionString: "asymptoter:password@mongodb://docker.for.mac.localhost:27017/?authSource=admin"

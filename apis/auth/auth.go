@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/asymptoter/practice-backend/base/config"
@@ -38,19 +37,8 @@ type handler struct {
 	authStore            auth.Store
 }
 
-type Credentials struct {
-	Cid     string `json:"cid"`
-	Csecret string `json:"csecret"`
-}
-
 func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service, us user.Store, authStore auth.Store) {
-	var c Credentials
-	file, err := ioutil.ReadFile("../../creds.json")
-	if err != nil {
-		fmt.Printf("File error: %v\n", err)
-		os.Exit(1)
-	}
-	json.Unmarshal(file, &c)
+	gc := config.Value.Server.GoogleOAuth2
 
 	h := handler{
 		sql:       db,
@@ -58,27 +46,12 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 		us:        us,
 		authStore: authStore,
 		googleOAuth2Config: &oauth2.Config{
-			ClientID:     c.Cid,
-			ClientSecret: c.Csecret,
-			RedirectURL:  "https://asymptoter-practice.nctu.me/api/v1/auth/signupwithgoogle",
-			Scopes: []string{
-				"https://www.googleapis.com/auth/userinfo.email",
-				"https://www.googleapis.com/auth/userinfo.profile",
-			},
-			Endpoint: google.Endpoint,
+			ClientID:     gc.ClientID,
+			ClientSecret: gc.ClientSecret,
+			Endpoint:     google.Endpoint,
+			RedirectURL:  gc.RedirectURL,
+			Scopes:       gc.Scopes,
 		},
-		/*
-			facebookOAuth2Config: &oauth2.Config{
-				ClientID:     c.Cid,
-				ClientSecret: c.Csecret,
-				RedirectURL:  "https://asymptoter-practice.nctu.me/api/v1/auth/signupwithfacebook",
-				Scopes: []string{
-					"https://www.googleapis.com/auth/userinfo.email",
-					"https://www.googleapis.com/auth/userinfo.profile",
-				},
-				Endpoint: facebook.Endpoint,
-			},
-		*/
 	}
 
 	r.Use(sessions.Sessions("goquestsession", sessions.NewCookieStore([]byte("secret"))))
@@ -88,8 +61,6 @@ func SetHttpHandler(r *gin.RouterGroup, db *sqlx.DB, redisService redis.Service,
 
 	r.Handle("GET", "/signupwithgoogle", h.signupWithGoogle)
 	r.Handle("GET", "/loginwithgoogle", h.loginWithGoogle)
-	//r.Handle("GET", "/signupwithfacebook", h.signupWithFacebook)
-	//r.Handle("GET", "/loginwithfacebook", h.loginWithFacebook)
 }
 
 type SignupRequest struct {
