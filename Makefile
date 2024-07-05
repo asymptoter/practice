@@ -23,5 +23,6 @@ local:
 
 # prod 
 prod:
+	docker build . -t server:latest
 	docker tag server:latest asia-east1-docker.pkg.dev/practice-backend-423606/practice-backend/server:latest
 	docker push asia-east1-docker.pkg.dev/practice-backend-423606/practice-backend/server:latest
