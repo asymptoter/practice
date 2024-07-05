@@ -1,3 +1,4 @@
 FROM nginx:latest
 COPY . .
-EXPOSE 443
+COPY config/nginx.conf /nginx.conf
+EXPOSE 80

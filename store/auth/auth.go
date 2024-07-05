@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/asymptoter/practice-backend/base/ctx"
-	"github.com/asymptoter/practice-backend/base/email"
+	"github.com/asymptoter/practice-backend/external/email"
 	"github.com/asymptoter/practice-backend/models"
 	"github.com/asymptoter/practice-backend/store/user"
 )
@@ -21,18 +21,18 @@ func New(userStore user.Store) Store {
 	}
 }
 
-func (s *impl) Signup(context ctx.CTX, userInfo *models.User) (*models.User, error) {
+func (s *impl) Signup(ctx ctx.CTX, userInfo *models.User) (*models.User, error) {
 	// Store user infomation in db
-	user, err := s.userStore.Create(context, userInfo)
+	user, err := s.userStore.Create(ctx, userInfo)
 	if err != nil {
-		context.WithField("err", err).Error("Signup failed at userStore.Create")
+		ctx.Error(err)
 		return nil, err
 	}
 
 	// Send a email to inform the registration succeeded
 	signupSuccessMessage := "Registration succeeded!"
-	if err := email.Send(context, userInfo.Email, signupSuccessMessage); err != nil {
-		context.WithField("err", err).Error("Signup failed at email.Send")
+	if err := email.Send(ctx, userInfo.Email, signupSuccessMessage); err != nil {
+		ctx.Error(err)
 		return nil, err
 	}
 

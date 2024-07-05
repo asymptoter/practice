@@ -76,15 +76,14 @@ type Configuration struct {
 	Mongo    DatabaseConfiguration `yaml:"mongo"`
 }
 
-func Init(pwd string) Configuration {
-	context := ctx.Background()
+func Init(ctx ctx.CTX, pwd string) Configuration {
 	file, err := ioutil.ReadFile(pwd[:len(pwd)-1] + "/../../config/config.yml")
 	if err != nil {
-		panic("config.Init failed at ioutil.ReadFile " + err.Error())
+		ctx.Fatal(err)
 	}
 
 	if err := yaml.Unmarshal(file, Configurations); err != nil {
-		panic("config.Init failed at yaml.Unmarshal " + err.Error())
+		ctx.Fatal(err)
 	}
 
 	temp := Configurations[*ENV]
@@ -94,6 +93,6 @@ func Init(pwd string) Configuration {
 		return Value
 	}
 	Value = temp
-	context.Info("Configuration updated.")
+	ctx.Info("Configuration updated.")
 	return Value
 }

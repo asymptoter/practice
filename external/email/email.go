@@ -7,7 +7,6 @@ import (
 
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
-	"github.com/sirupsen/logrus"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
@@ -21,7 +20,7 @@ var (
 	smtpPort         = 587
 )
 
-func Send(context ctx.CTX, email, message string) error {
+func Send(ctx ctx.CTX, email, message string) error {
 	cfg := config.Value.Server.Email
 	smtpHost = cfg.SmtpHost
 	smtpPort = cfg.Port
@@ -37,38 +36,38 @@ func Send(context ctx.CTX, email, message string) error {
 	d := gomail.NewDialer(smtpHost, smtpPort, officialAccount, officialPassword)
 	// TODO solve the secure issue
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	context.WithFields(logrus.Fields{
-		"smtpHost":        smtpHost,
-		"smtpPort":        smtpPort,
-		"officialAccount": officialAccount,
-		"receiver":        email,
-	}).Info("Dial and send email")
+	ctx.With(
+		"smtpHost", smtpHost,
+		"smtpPort", smtpPort,
+		"officialAccount", officialAccount,
+		"receiver", email,
+	).Info("Dial and send email")
 	return d.DialAndSend(m)
 }
 
-func Receive(context ctx.CTX, account, password string) (string, error) {
-	context.Info("Connecting to server...")
+func Receive(ctx ctx.CTX, account, password string) (string, error) {
+	ctx.Info("Connecting to server...")
 
 	// Connect to server
 	c, err := client.DialTLS("imap.gmail.com:993", &tls.Config{InsecureSkipVerify: false})
 	if err != nil {
-		context.Fatal("client.DialTLS failed ", err)
+		ctx.Fatal(err)
 	}
-	context.Info("Connected")
+	ctx.Info("Connected")
 
 	// Login
 	if err := c.Login(account, password); err != nil {
-		context.Fatal(account+" "+password+" ", err)
+		ctx.Fatal(account+" "+password+" ", err)
 	}
 	defer c.Logout()
-	context.Info("Logged in")
+	ctx.Info("Logged in")
 
 	// Select INBOX
 	_, err = c.Select("INBOX", false)
 	if err != nil {
-		context.Fatal(err)
+		ctx.Fatal(err)
 	}
-	context.Info("Select inbox")
+	ctx.Info("Select inbox")
 	//log.Println("Flags for INBOX:", mbox.Flags)
 
 	seqset := new(imap.SeqSet)
@@ -76,7 +75,7 @@ func Receive(context ctx.CTX, account, password string) (string, error) {
 
 	messages := make(chan *imap.Message, 1)
 	if err := c.Fetch(seqset, []imap.FetchItem{imap.FetchRFC822}, messages); err != nil {
-		context.Fatal("Fetch failed")
+		ctx.Fatal(err)
 	}
 
 	res := ""
@@ -84,16 +83,16 @@ func Receive(context ctx.CTX, account, password string) (string, error) {
 		for _, v := range msg.Body {
 			m, err := mail.ReadMessage(v)
 			if err != nil {
-				context.Fatal("mail.ReadMessage ", err)
+				ctx.Fatal(err)
 			}
 			body, err := ioutil.ReadAll(m.Body)
 			if err != nil {
-				context.Fatal("ioutil.ReadAll ", err)
+				ctx.Fatal(err)
 			}
 			res = string(body)
 		}
 	}
 
-	context.Info("Done!")
+	ctx.Info("Done!")
 	return res, nil
 }

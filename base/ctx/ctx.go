@@ -3,33 +3,53 @@ package ctx
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
+
+type M map[string]any
 
 type CTX struct {
 	context.Context
-	logrus.Entry
+	Logger *zap.SugaredLogger
 }
 
 func Background() CTX {
-	log := logrus.New()
-	log.SetReportCaller(true)
 	return CTX{
 		Context: context.Background(),
-		Entry:   *logrus.NewEntry(log),
+		Logger:  zap.NewExample().Sugar(),
 	}
 }
 
-func WithValue(parent CTX, key string, val interface{}) CTX {
-	return CTX{
-		Context: context.WithValue(parent, key, val),
-		Entry:   *parent.Entry.WithField(key, val),
-	}
-}
-
-func WithValues(parent CTX, m logrus.Fields) CTX {
+func With(parent CTX, fields ...any) CTX {
 	return CTX{
 		Context: parent.Context,
-		Entry:   *parent.Entry.WithFields(m),
+		Logger:  parent.Logger.With(fields),
 	}
+}
+
+func (c CTX) With(fields ...any) CTX {
+	return CTX{
+		Context: c.Context,
+		Logger:  c.Logger.With(fields),
+	}
+}
+
+func (c CTX) Debug(args ...any) {
+	c.Logger.Debug(args)
+}
+
+func (c CTX) Info(args ...any) {
+	c.Logger.Info(args)
+}
+
+func (c CTX) Warn(args ...any) {
+	c.Logger.Warn(args)
+}
+
+func (c CTX) Error(args ...any) {
+	c.Logger.Error(args)
+}
+
+func (c CTX) Fatal(args ...any) {
+	c.Logger.Fatal(args)
 }

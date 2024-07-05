@@ -8,7 +8,6 @@ import (
 	"github.com/asymptoter/practice-backend/base/ctx"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/sirupsen/logrus"
 )
 
 type Service interface {
@@ -33,49 +32,46 @@ func NewService(address string) Service {
 	}
 }
 
-func Close(context ctx.CTX, functionName string, conn redis.Conn) {
+func Close(ctx ctx.CTX, functionName string, conn redis.Conn) {
 	if err := conn.Close(); err != nil {
-		context.WithField("err", err).Error(functionName + " failed at Close")
+		ctx.With("err", err).Error(functionName + " failed at Close")
 	}
 }
 
-func (r *impl) Get(context ctx.CTX, key string, res interface{}) error {
-	context = ctx.WithValue(context, "key", key)
+func (r *impl) Get(ctx ctx.CTX, key string, res interface{}) error {
+	ctx = ctx.With("key", key)
 	if len(key) == 0 {
 		return errors.New("empty key")
 	}
 	conn := r.redis.Get()
-	defer Close(context, "Get", conn)
+	defer Close(ctx, "Get", conn)
 
 	val, err := conn.Do("GET", key)
 	if err != nil {
-		context.WithField("err", err).Error("Get failed at conn.Do")
+		ctx.Error(err)
 		return err
 	}
 
 	if err := json.Unmarshal(val.([]byte), res); err != nil {
-		context.WithField("err", err).Error("Get failed at json.Unmarshal")
+		ctx.Error(err)
 		return err
 	}
 	return nil
 }
 
-func (r *impl) Set(context ctx.CTX, key string, value interface{}, expiration time.Duration) error {
-	context = ctx.WithValue(context, "key", key)
+func (r *impl) Set(ctx ctx.CTX, key string, value interface{}, expiration time.Duration) error {
+	ctx = ctx.With("key", key)
 	conn := r.redis.Get()
-	defer Close(context, "Set", conn)
+	defer Close(ctx, "Set", conn)
 
 	v, err := json.Marshal(value)
 	if err != nil {
-		context.WithField("err", err).Error("Set failed at json.Masharl")
+		ctx.Error(err)
 		return err
 	}
 
 	if _, err := conn.Do("SET", key, v, "EX", int64(expiration)); err != nil {
-		context.WithFields(logrus.Fields{
-			"err":        err,
-			"expiration": expiration,
-		}).Error("Set failed at conn.Do")
+		ctx.With("expiration", expiration).Error(err)
 		return err
 	}
 

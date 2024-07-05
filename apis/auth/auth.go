@@ -12,8 +12,8 @@ import (
 
 	"github.com/asymptoter/practice-backend/base/config"
 	"github.com/asymptoter/practice-backend/base/ctx"
-	"github.com/asymptoter/practice-backend/base/email"
-	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/external/email"
+	"github.com/asymptoter/practice-backend/external/redis"
 	"github.com/asymptoter/practice-backend/models"
 	"github.com/asymptoter/practice-backend/store/auth"
 	"github.com/asymptoter/practice-backend/store/user"
@@ -22,7 +22,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -74,12 +73,9 @@ type SignupResponse struct {
 
 func (h *handler) signup(c *gin.Context) {
 	var signupInfo SignupRequest
-	context := ctx.Background()
+	ctx := ctx.Background()
 	if err := c.ShouldBind(&signupInfo); err != nil {
-		context.WithFields(logrus.Fields{
-			"params": signupInfo,
-			"error":  err,
-		}).Error("c.ShouldBind failed")
+		ctx.With("params", signupInfo).Error(err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
@@ -89,22 +85,14 @@ func (h *handler) signup(c *gin.Context) {
 		Password: signupInfo.Password,
 	}
 
-	if _, err := h.us.Create(context, user); err != nil {
-		context.WithFields(logrus.Fields{
-			"err":   err,
-			"email": user.Email,
-		}).Error("signup failed at us.Create")
+	if _, err := h.us.Create(ctx, user); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	activeToken := uuid.New().String()
 	activeAccountKey := "auth:active:activeToken:" + activeToken
-	if err := h.redis.Set(context, activeAccountKey, user.Token, 24*time.Hour); err != nil {
-		context.WithFields(logrus.Fields{
-			"err":    err,
-			"userID": user.ID,
-		}).Error("redis.Set failed")
+	if err := h.redis.Set(ctx, activeAccountKey, user.Token, 24*time.Hour); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -113,8 +101,7 @@ func (h *handler) signup(c *gin.Context) {
 	link := "http://" + cfg.Address + "/api/v1/auth/activation?id=" + user.ID.String() + "&activeToken=" + activeToken
 	activeMessage := fmt.Sprintf(cfg.Email.ActivationMessage, link)
 
-	if err := email.Send(context, signupInfo.Email, activeMessage); err != nil {
-		context.WithField("err", err).Error("email.Send failed")
+	if err := email.Send(ctx, signupInfo.Email, activeMessage); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -131,25 +118,19 @@ type ActivationResponse struct {
 func (h *handler) activation(c *gin.Context) {
 	userID := c.Query("id")
 	activeToken := c.Query("activeToken")
-	context := ctx.Background()
+	ctx := ctx.Background()
 
 	activeAccountKey := "auth:active:activeToken:" + activeToken
 	token := ""
-	if err := h.redis.Get(context, activeAccountKey, &token); err != nil {
-		context.WithFields(logrus.Fields{
-			"err":    err,
-			"userID": userID,
-		}).Error("redis.Get failed")
+	if err := h.redis.Get(ctx, activeAccountKey, &token); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	if _, err := h.sql.Exec("UPDATE users SET token=$1 WHERE id=$2;", token, userID); err != nil {
-		context.WithField("err", err).Error("sql.Update failed")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	context.Info("sql.Exec done.")
 
 	c.JSON(http.StatusOK, ActivationResponse{
 		Token: token,
@@ -163,37 +144,35 @@ type loginRequest struct {
 
 func (h *handler) login(c *gin.Context) {
 	var loginInfo loginRequest
-	context := ctx.Background()
+	ctx := ctx.Background()
 	if err := c.ShouldBind(&loginInfo); err != nil {
-		context.WithField("error", err).Error("c.ShouldBind failed")
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	context = ctx.WithValue(context, "email", loginInfo.Email)
+	ctx = ctx.With("email", loginInfo.Email)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(loginInfo.Password), bcrypt.DefaultCost)
 	if err != nil {
-		context.WithField("err", err).Error("bcrypt.GenerateFromPassword failed")
+		ctx.Error(err)
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
 	user := models.User{}
 	if err := h.sql.Get(&user, "SELECT ID, email, password, token, register_date FROM users WHERE email = $1 LIMIT 1;", loginInfo.Email); err != nil {
-		context.WithField("err", err).Error("login failed at sql.Get")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	context = ctx.WithValue(context, "userID", user.ID)
+	ctx = ctx.With("userID", user.ID)
 
 	if err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(loginInfo.Password)); err != nil {
-		context.WithField("err", err).Error("Invalid email or password")
+		ctx.Error(err)
 		c.JSON(http.StatusUnauthorized, errors.New("Invalid email or password"))
 		return
 	}
 
 	if len(user.Token) == 0 {
-		context.Error("Account is not activated")
+		ctx.Error("Account is not activated")
 		c.JSON(http.StatusBadRequest, errors.New("Account is not activated"))
 		return
 	}
@@ -201,13 +180,12 @@ func (h *handler) login(c *gin.Context) {
 	userInfoKey := "user:" + user.ID.String()
 	b, err := json.Marshal(user)
 	if err != nil {
-		context.WithField("err", err).Error("json.Marshal failed")
+		ctx.Error(err)
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 
-	if err := h.redis.Set(context, userInfoKey, string(b), 24*time.Hour); err != nil {
-		context.WithField("err", err).Error("redis.Set failed")
+	if err := h.redis.Set(ctx, userInfoKey, string(b), 24*time.Hour); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -227,7 +205,7 @@ type SignupWithGoogleUserInfo struct {
 
 func (h *handler) signupWithGoogle(c *gin.Context) {
 	// Handle the exchange code to initiate a transport.
-	context := ctx.Background()
+	ctx := ctx.Background()
 	session := sessions.Default(c)
 	retrievedState := session.Get("state")
 	if retrievedState != c.Query("state") {
@@ -255,9 +233,8 @@ func (h *handler) signupWithGoogle(c *gin.Context) {
 		return
 	}
 
-	user, err := h.authStore.Signup(context, googleUserInfo)
+	user, err := h.authStore.Signup(ctx, googleUserInfo)
 	if err != nil {
-		context.WithField("err", err).Error("signup failed at us.Create")
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}

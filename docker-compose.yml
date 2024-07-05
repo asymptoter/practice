@@ -1,17 +1,24 @@
 version: "3.7"
 services:
     nginx:
-        build: "./nginx"
+        image: "nginx"
         depends_on:
-            - server
+            - "backend"
         ports:
-            - 443:443
+            - "80:80"
         container_name: "nginx_practice"
-    server:
+        volumes:
+            - type: bind
+              source: ./nginx/config/nginx_local.conf
+              target: /etc/nginx/conf.d/default.conf
+              read_only: true
+    backend:
         image: "server:latest"
         build: 
             context: .
             dockerfile: "Dockerfile"
+        ports:
+            - "8080"
         depends_on:
             - "redis"
             - "postgresql"
@@ -20,7 +27,7 @@ services:
         volumes:
             - "./app/server:/go/src/github.com/asymptoter/practice-backend/app/server"
             - "./config:/go/src/github.com/asymptoter/practice-backend/config"
-        container_name: "server_practice"
+        container_name: "backend_practice"
         restart: always
         #command: ["../../scripts/wait-for-it.sh", "postgresql:5432", "--", "go", "run", "main.go"]
     redis:
@@ -35,7 +42,7 @@ services:
             POSTGRES_USER: asymptoter
             POSTGRES_PASSWORD: password
         ports:
-            - 5432:5432
+            - "5432:5432"
         volumes:
             - "./databases/postgres/data:/var/lib/postgresql/"
             - "./databases/postgres/init:/docker-entrypoint-initdb.d/"
@@ -47,4 +54,5 @@ services:
             MONGO_INITDB_ROOT_USERNAME: asymptoter
             MONGO_INITDB_ROOT_PASSWORD: password
         ports:
-            - 27017:27017
+            - "27017:27017"
+        container_name: "mongodb_practice"

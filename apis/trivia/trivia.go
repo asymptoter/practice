@@ -5,7 +5,7 @@ import (
 
 	"github.com/asymptoter/practice-backend/apis/middleware"
 	"github.com/asymptoter/practice-backend/base/ctx"
-	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/external/redis"
 	"github.com/asymptoter/practice-backend/models"
 	"github.com/asymptoter/practice-backend/store/trivia"
 	"github.com/asymptoter/practice-backend/store/user"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 )
 
 type handler struct {
@@ -49,20 +48,18 @@ func SetHttpHandler(r *gin.RouterGroup, ts trivia.Store, us user.Store) {
 
 func (h *handler) createQuiz(c *gin.Context) {
 	user := c.MustGet("userInfo").(*models.User)
-	context := ctx.WithValue(ctx.Background(), "userID", user.ID)
+	ctx := ctx.Background().With("userID", user.ID)
 
 	quiz := &models.Quiz{}
 	if err := c.ShouldBind(quiz); err != nil {
-		context.WithField("error", err).Error("createQuiz failed at ShouldBind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	context = ctx.WithValue(context, "quiz", quiz)
+	ctx = ctx.With("quiz", quiz)
 
 	quiz.Creator = user.ID
 	quiz.ImageURL = "" // TODO transfer image into url
-	if err := h.trivia.CreateQuiz(context, quiz); err != nil {
-		context.WithField("error", err).Error("createQuiz failed at trivia.CreateQuiz")
+	if err := h.trivia.CreateQuiz(ctx, quiz); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -75,22 +72,17 @@ type GetQuizzesParams struct {
 }
 
 func (h *handler) getQuizzes(c *gin.Context) {
-	context := ctx.Background()
+	ctx := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
-	context = ctx.WithValue(context, "userID", user.ID)
+	ctx = ctx.With("userID", user.ID)
 	var req GetQuizzesParams
 	if err := c.Bind(&req); err != nil {
-		context.WithField("error", err).Error("getQuizzes failed at c.Bind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	res, err := h.trivia.GetQuizzes(context, user.ID, req.Content, req.Category)
+	res, err := h.trivia.GetQuizzes(ctx, user.ID, req.Content, req.Category)
 	if err != nil {
-		context.WithFields(logrus.Fields{
-			"params": req,
-			"error":  err,
-		}).Error("getQuizzes failed at trivia.GetQuizzes")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -101,25 +93,17 @@ func (h *handler) deleteQuiz(c *gin.Context) {
 }
 
 func (h *handler) createGame(c *gin.Context) {
-	context := ctx.Background()
+	ctx := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
 
 	game := &models.Game{}
 	if err := c.ShouldBind(game); err != nil {
-		context.WithFields(logrus.Fields{
-			"userID": user.ID,
-			"error":  err,
-		}).Error("createGame failed at ShouldBind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
 	game.Creator = user.ID
-	if err := h.trivia.CreateGame(context, game); err != nil {
-		context.WithFields(logrus.Fields{
-			"game":  game,
-			"error": err,
-		}).Error("createGame failed at trivia.CreateGame")
+	if err := h.trivia.CreateGame(ctx, game); err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -131,22 +115,17 @@ type GetGamesParams struct {
 }
 
 func (h *handler) getGames(c *gin.Context) {
-	context := ctx.Background()
+	ctx := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
-	context = ctx.WithValue(context, "userID", user.ID)
+	ctx = ctx.With("userID", user.ID)
 	var req GetGamesParams
 	if err := c.Bind(&req); err != nil {
-		context.WithField("error", err).Error("getGames failed at c.Bind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 
-	res, err := h.trivia.GetGames(context, user.ID, req.Name)
+	res, err := h.trivia.GetGames(ctx, user.ID, req.Name)
 	if err != nil {
-		context.WithFields(logrus.Fields{
-			"params": req,
-			"error":  err,
-		}).Error("getQuiz failed at trivia.GetGames")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -163,22 +142,20 @@ type StartGameResponse struct {
 }
 
 func (h *handler) startGame(c *gin.Context) {
-	context := ctx.Background()
+	ctx := ctx.Background()
 	user := c.MustGet("userInfo").(*models.User)
-	context = ctx.WithValue(context, "userID", user.ID)
+	ctx = ctx.With("userID", user.ID)
 
 	var req StartGameParams
 	if err := c.Bind(&req); err != nil {
-		context.WithField("error", err).Error("startGames failed at c.Bind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
 	gameID := uuid.MustParse(req.GameID)
-	context = ctx.WithValue(context, "gameID", gameID)
+	ctx = ctx.With("gameID", gameID)
 
-	game, quiz, err := h.trivia.StartGame(context, user.ID, gameID)
+	game, quiz, err := h.trivia.StartGame(ctx, user.ID, gameID)
 	if err != nil {
-		context.WithField("error", err).Error("startGame failed at trivia.GetGame")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -201,19 +178,17 @@ type AnswerResponse struct {
 
 func (h *handler) answer(c *gin.Context) {
 	user := c.MustGet("userInfo").(*models.User)
-	context := ctx.WithValue(ctx.Background(), "userID", user.ID)
+	ctx := ctx.Background().With("userID", user.ID)
 
 	var req AnswerRequest
 	if err := c.ShouldBind(&req); err != nil {
-		context.WithField("error", err).Error("answer failed at ShouldBind ", err)
 		c.JSON(http.StatusBadRequest, err)
 		return
 	}
-	context = ctx.WithValue(context, "gameID", req.GameID)
+	ctx = ctx.With("gameID", req.GameID)
 
-	quiz, res, err := h.trivia.Answer(context, user.ID, req.GameID, req.Answer)
+	quiz, res, err := h.trivia.Answer(ctx, user.ID, req.GameID, req.Answer)
 	if err != nil {
-		context.WithField("error", err).Error("answer failed at trivia.Answer")
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}

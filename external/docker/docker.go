@@ -4,9 +4,9 @@ package docker
 import (
 	"fmt"
 
-	"github.com/asymptoter/practice-backend/base/db"
-	"github.com/asymptoter/practice-backend/base/mongo"
-	"github.com/asymptoter/practice-backend/base/redis"
+	"github.com/asymptoter/practice-backend/external/db"
+	"github.com/asymptoter/practice-backend/external/mongo"
+	"github.com/asymptoter/practice-backend/external/redis"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest"
